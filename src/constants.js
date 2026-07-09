@@ -189,24 +189,30 @@ export const ANTI_CONFIG = {
   FRENZY_COOLDOWN_MIN_COUNT: 1,
   /** 熱狂解除後の Heat（再び熱狂させるには温め直しが必要になる） */
   FRENZY_COOLDOWN_HEAT: 50,
+  // --- 通常出現（告知なしの少数トリクル。常時のプレッシャーを作る） ---
   /** 最初のスポーンまでの時間（ミリ秒） */
-  FIRST_SPAWN_MS: 12000,
-  /** スポーン間隔（ミリ秒） */
-  SPAWN_INTERVAL_MS: 8000,
-  /**
-   * 1 波あたりの基本スポーン数（ステージの antiWaveMult 適用前）。
-   * 1 体ずつだと「ウェーブ」感が薄いとのフィードバックを受け、まとまった
-   * 人数が一気に出現するようにしている
-   */
-  WAVE_BASE_COUNT: 2,
-  /** この秒数が経過するごとに 1 波あたりの基本スポーン数が 1 体増える */
-  RAMP_EVERY_SEC: 25,
+  FIRST_SPAWN_MS: 8000,
+  /** スポーン間隔（ミリ秒）。stage.antiIntervalMult で会場ごとに調整される */
+  SPAWN_INTERVAL_MS: 7000,
+  /** 1 回あたりの基本スポーン数（stage.antiNormalCountMult 適用前） */
+  NORMAL_BASE_COUNT: 1,
+  /** この秒数が経過するごとに 1 回あたりの基本スポーン数が 1 体増える */
+  RAMP_EVERY_SEC: 35,
+
+  // --- ウェーブ出現（告知つきの大量出現。1 ゲームに stage.waveCount 回だけ発生） ---
+  /** 最初のウェーブが来るタイミング（ミリ秒） */
+  WAVE_FIRST_MS: 18000,
+  /** 最後のウェーブが来るタイミング（ミリ秒）。この間で waveCount 回を等間隔に配置する */
+  WAVE_LAST_MS: 88000,
+  /** 1 ウェーブあたりの基本出現数（stage.waveSizeMult 適用前） */
+  WAVE_BASE_SIZE: 10,
+
   /**
    * オブジェクトプールの上限。
-   * ドーム級の会場では antiWaveMult とウェーブ数増加により同時出現数が
-   * 大きく増えるため、小箱基準の値よりかなり余裕を持たせている
+   * ドーム級の会場ではウェーブ 1 回で 20 体以上まとめて出現するうえ、
+   * 通常出現との重なりもあるため、小箱基準の値よりかなり余裕を持たせている
    */
-  POOL_SIZE: 80,
+  POOL_SIZE: 96,
   /** 画面外スポーン時の画面端からの距離（px） */
   SPAWN_MARGIN: 30,
 };
@@ -403,8 +409,13 @@ export const CHARACTERS = [
  *   経験値が過剰に稼げてしまう＝難易度が下がる問題があったため、
  *   「範囲は同じ密度のまま広がる」形にして、広い会場を歩き回って稼ぐ必要がある
  *   ようにしている
- * antiIntervalMult: アンチのスポーン間隔の倍率（小さいほど頻繁）
- * antiWaveMult: 1 回のスポーンで出現する数の倍率（＝アンチの「ウェーブ化」）
+ * アンチは「通常出現（告知なしの少数トリクル）」と「ウェーブ（告知つきの大量出現、
+ * 1 ゲームに数回だけ）」の 2 系統に分かれる（GameScene.spawnNormalAnti /
+ * spawnWave を参照）。
+ * antiIntervalMult: 通常出現のスポーン間隔の倍率（小さいほど頻繁）
+ * antiNormalCountMult: 通常出現 1 回あたりの人数の倍率
+ * waveCount: 1 ゲームあたりのウェーブ回数（3〜5 回を目安にしている）
+ * waveSizeMult: ウェーブ 1 回あたりの出現数の倍率（ANTI_CONFIG.WAVE_BASE_SIZE に乗算）
  * heatDecayMult: 観客の自然冷却速度の倍率（大きいほど Heat が鈍化しやすい）
  * unlocked: false のステージは最初は選択できず、PERMA_CONFIG.UPGRADES の
  * unlockUpgradeId で指定した永久強化を購入すると解放される
@@ -419,7 +430,9 @@ export const STAGES = [
     worldWidth: GAME.WIDTH,
     worldHeight: GAME.HEIGHT,
     antiIntervalMult: 1,
-    antiWaveMult: 1,
+    antiNormalCountMult: 1,
+    waveCount: 3,
+    waveSizeMult: 1,
     heatDecayMult: 1,
     unlocked: true,
     unlockUpgradeId: null,
@@ -433,7 +446,9 @@ export const STAGES = [
     worldWidth: 1400,
     worldHeight: 900,
     antiIntervalMult: 0.85,
-    antiWaveMult: 1.4,
+    antiNormalCountMult: 1.2,
+    waveCount: 3,
+    waveSizeMult: 1.2,
     heatDecayMult: 1.15,
     unlocked: false,
     unlockUpgradeId: 'unlockMedium',
@@ -447,7 +462,9 @@ export const STAGES = [
     worldWidth: 1700,
     worldHeight: 1200,
     antiIntervalMult: 0.7,
-    antiWaveMult: 1.8,
+    antiNormalCountMult: 1.5,
+    waveCount: 4,
+    waveSizeMult: 1.5,
     heatDecayMult: 1.3,
     unlocked: false,
     unlockUpgradeId: 'unlockLarge',
@@ -461,7 +478,9 @@ export const STAGES = [
     worldWidth: 2050,
     worldHeight: 1450,
     antiIntervalMult: 0.55,
-    antiWaveMult: 2.4,
+    antiNormalCountMult: 1.8,
+    waveCount: 4,
+    waveSizeMult: 1.8,
     heatDecayMult: 1.45,
     unlocked: false,
     unlockUpgradeId: 'unlockArena',
@@ -475,7 +494,9 @@ export const STAGES = [
     worldWidth: 2400,
     worldHeight: 1600,
     antiIntervalMult: 0.45,
-    antiWaveMult: 3.2,
+    antiNormalCountMult: 2.2,
+    waveCount: 5,
+    waveSizeMult: 2.2,
     heatDecayMult: 1.6,
     unlocked: false,
     unlockUpgradeId: 'unlockDome',

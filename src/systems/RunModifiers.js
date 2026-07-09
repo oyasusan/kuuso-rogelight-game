@@ -69,12 +69,10 @@ export function buildRunModifiers() {
       PLAYER_CONFIG.SPEED * character.speedMult * (1 + permaBonus('speed')),
     /** アンチ接触時の会場 Heat 減少量（緩和されても 0 より下がらない＝回復はしない） */
     antiHeatDrain: Math.min(0, ANTI_CONFIG.HEAT_DRAIN + permaBonus('antiResist')),
-    /** アンチのスポーン間隔（ステージ規模が大きいほど短い） */
+    /** 通常アンチ（告知なしの少数トリクル出現）のスポーン間隔（ステージ規模が大きいほど短い） */
     antiSpawnIntervalMs: Math.round(
       ANTI_CONFIG.SPAWN_INTERVAL_MS * stage.antiIntervalMult,
     ),
-    /** 1 回のスポーンで出現するアンチ数の倍率（ステージ規模が大きいほど大きい＝ウェーブ化） */
-    antiWaveMult: stage.antiWaveMult,
     /**
      * 観客の自然冷却速度（毎秒）。ステージ規模が大きいほど鈍化しやすくなる一方、
      * 永久強化「スタミナ強化」で緩和できる。下限を設けて 0 以下にはしない

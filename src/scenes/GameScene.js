@@ -134,8 +134,6 @@ export default class GameScene extends Phaser.Scene {
     this.isPaused = false;
     /** 未消化のレベルアップ回数（連続レベルアップ時に順番に 3 択を出す） */
     this.pendingUpgrades = 0;
-    /** 何回目のアンチウェーブか（announceWave の表示に使う） */
-    this.waveNumber = 0;
 
     // --- 衝突・イベント ---
     this.physics.add.overlap(this.player, this.antiGroup, (_player, anti) =>
@@ -152,16 +150,18 @@ export default class GameScene extends Phaser.Scene {
       callback: this.onSecondTick,
       callbackScope: this,
     });
-    // アンチのスポーン（初回は少し遅らせ、以後はステージに応じた間隔）
+    // アンチの通常出現（告知なしの少数トリクル。初回は少し遅らせ、以後はステージに応じた間隔）
     this.time.delayedCall(ANTI_CONFIG.FIRST_SPAWN_MS, () => {
-      this.spawnAntiWave();
+      this.spawnNormalAnti();
       this.time.addEvent({
         delay: this.mods.antiSpawnIntervalMs,
         loop: true,
-        callback: this.spawnAntiWave,
+        callback: this.spawnNormalAnti,
         callbackScope: this,
       });
     });
+    // アンチのウェーブ出現（告知つきの大量出現。1 ゲームに stage.waveCount 回だけ発生）
+    this.scheduleWaves();
 
     this.updateHud();
   }
@@ -216,17 +216,45 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 経過時間・ステージ規模に応じた数のアンチを画面外にスポーンさせ、襲来を告知する */
-  spawnAntiWave() {
+  /**
+   * 通常のアンチ出現。告知なしの少数トリクルで、常時のプレッシャーを作る。
+   * 経過時間とステージ規模（stage.antiNormalCountMult）に応じて緩やかに増える
+   */
+  spawnNormalAnti() {
     const elapsedSec = GAME.LIVE_DURATION_SEC - this.remainingSec;
     const baseCount =
-      ANTI_CONFIG.WAVE_BASE_COUNT +
+      ANTI_CONFIG.NORMAL_BASE_COUNT +
       Math.floor(elapsedSec / ANTI_CONFIG.RAMP_EVERY_SEC);
-    const count = Math.max(1, Math.round(baseCount * this.mods.antiWaveMult));
+    const count = Math.max(
+      1,
+      Math.round(baseCount * this.mods.stage.antiNormalCountMult),
+    );
     this.spawnSystem.spawnAntis(count);
+  }
 
-    this.waveNumber += 1;
-    this.announceWave(this.waveNumber);
+  /**
+   * ステージの waveCount 回ぶんのウェーブを、WAVE_FIRST_MS 〜 WAVE_LAST_MS の
+   * 間に等間隔で予約する（1 ゲームに 3〜5 回程度）
+   */
+  scheduleWaves() {
+    const { waveCount } = this.mods.stage;
+    const { WAVE_FIRST_MS, WAVE_LAST_MS } = ANTI_CONFIG;
+    const span = WAVE_LAST_MS - WAVE_FIRST_MS;
+
+    for (let i = 0; i < waveCount; i += 1) {
+      const delayMs =
+        WAVE_FIRST_MS + (waveCount > 1 ? (span * i) / (waveCount - 1) : 0);
+      this.time.delayedCall(delayMs, () => this.spawnWave(i + 1));
+    }
+  }
+
+  /** アンチのウェーブ出現。まとまった数を一気にスポーンさせ、襲来を告知する */
+  spawnWave(waveNumber) {
+    const count = Math.round(
+      ANTI_CONFIG.WAVE_BASE_SIZE * this.mods.stage.waveSizeMult,
+    );
+    this.spawnSystem.spawnAntis(count);
+    this.announceWave(waveNumber);
   }
 
   /** 画面中央にアンチのウェーブ襲来を大きく告知する */
