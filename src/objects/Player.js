@@ -30,6 +30,8 @@ export default class Player extends Phaser.Physics.Arcade.Image {
 
     /** 移動速度（レベルアップ強化で変更できるようプロパティ化） */
     this.moveSpeed = PLAYER_CONFIG.SPEED;
+    /** 最後に移動した方向（ラジアン）。ダンスの扇形の向きに使う */
+    this.facingAngle = -Math.PI / 2;
   }
 
   /** 毎フレームの入力処理 */
@@ -47,5 +49,9 @@ export default class Player extends Phaser.Physics.Arcade.Image {
       .normalize()
       .scale(this.moveSpeed);
     this.setVelocity(velocity.x, velocity.y);
+
+    if (dirX !== 0 || dirY !== 0) {
+      this.facingAngle = Math.atan2(dirY, dirX);
+    }
   }
 }

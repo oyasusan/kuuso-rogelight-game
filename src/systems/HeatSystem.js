@@ -27,26 +27,41 @@ export default class HeatSystem extends Phaser.Events.EventEmitter {
 
   /**
    * 観客 1 人へ Heat を与える。
+   * 熱狂状態の観客は変化しない（マイナスでも下がらない）。
    * @param {import('../objects/Audience.js').default} audience
-   * @param {number} baseAmount 倍率適用前の Heat 量
+   * @param {number} baseAmount 倍率適用前の Heat 量（負値で減少）
    */
   applyHeat(audience, baseAmount) {
     if (audience.isFrenzied) {
       return;
     }
+    // MC の倍率は上昇にのみ適用する（マイナスまで増幅しない）
+    const amount =
+      baseAmount > 0 ? baseAmount * this.heatMultiplier : baseAmount;
     audience.heat = Phaser.Math.Clamp(
-      audience.heat + baseAmount * this.heatMultiplier,
+      audience.heat + amount,
       0,
       AUDIENCE_CONFIG.MAX_HEAT,
     );
 
     if (audience.heat >= AUDIENCE_CONFIG.MAX_HEAT) {
-      audience.enterFrenzy();
-      this.frenziedAudiences.push(audience);
-      this.emit('frenzy', audience);
+      this.forceFrenzy(audience);
     } else {
       audience.updateAppearance();
     }
+  }
+
+  /**
+   * 観客を即座に熱狂状態にする（ファンサ、および Heat 最大到達時）。
+   * @param {import('../objects/Audience.js').default} audience
+   */
+  forceFrenzy(audience) {
+    if (audience.isFrenzied) {
+      return;
+    }
+    audience.enterFrenzy();
+    this.frenziedAudiences.push(audience);
+    this.emit('frenzy', audience);
   }
 
   /**
@@ -64,6 +79,58 @@ export default class HeatSystem extends Phaser.Events.EventEmitter {
         this.applyHeat(audience, baseAmount);
       }
     }
+  }
+
+  /**
+   * 指定座標から扇形範囲内のすべての観客へ Heat を与える。
+   * ダンス（Phase2）から使用する。
+   * @param {number} x 扇形の頂点 x
+   * @param {number} y 扇形の頂点 y
+   * @param {number} radius 扇形の半径
+   * @param {number} facingAngle 扇形の中心方向（ラジアン）
+   * @param {number} angleDeg 扇形の中心角（度）
+   * @param {number} baseAmount 与える Heat 量
+   */
+  applyHeatInSector(x, y, radius, facingAngle, angleDeg, baseAmount) {
+    const radiusSq = radius * radius;
+    const halfAngle = Phaser.Math.DegToRad(angleDeg) / 2;
+    for (const audience of this.audiences) {
+      const distSq = Phaser.Math.Distance.BetweenPointsSquared(
+        { x, y },
+        audience,
+      );
+      if (distSq > radiusSq) {
+        continue;
+      }
+      const toAudience = Phaser.Math.Angle.Between(x, y, audience.x, audience.y);
+      const diff = Phaser.Math.Angle.Wrap(toAudience - facingAngle);
+      if (Math.abs(diff) <= halfAngle) {
+        this.applyHeat(audience, baseAmount);
+      }
+    }
+  }
+
+  /**
+   * 最も近い熱狂していない観客を返す。ファンサの対象選択に使用する。
+   * @returns {import('../objects/Audience.js').default | null}
+   */
+  findNearestCalmAudience(x, y) {
+    let nearest = null;
+    let nearestDistSq = Infinity;
+    for (const audience of this.audiences) {
+      if (audience.isFrenzied) {
+        continue;
+      }
+      const distSq = Phaser.Math.Distance.BetweenPointsSquared(
+        { x, y },
+        audience,
+      );
+      if (distSq < nearestDistSq) {
+        nearestDistSq = distSq;
+        nearest = audience;
+      }
+    }
+    return nearest;
   }
 
   /**

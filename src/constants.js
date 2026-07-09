@@ -16,9 +16,11 @@ export const GAME = {
 export const DEPTH = {
   STAGE: 0,
   AUDIENCE: 1,
+  ANTI: 3,
   PLAYER: 5,
   EFFECT: 8,
   UI: 10,
+  OVERLAY: 20,
 };
 
 /** プレイヤー（アイドル）関連 */
@@ -82,6 +84,79 @@ export const SONG_CONFIG = {
   NOTE_POOL_SIZE: 24,
   /** 1 回の歌で表示する音符の数 */
   NOTES_PER_CAST: 3,
+};
+
+/** パフォーマンス「ダンス」（レベルアップで取得） */
+export const DANCE_CONFIG = {
+  /** 自動発動の間隔（ミリ秒） */
+  INTERVAL_MS: 3000,
+  /** 扇形の半径（px） */
+  RADIUS: 150,
+  /** 扇形の中心角（度） */
+  ANGLE_DEG: 100,
+  /** 観客へ与える Heat 量 */
+  HEAT_GAIN: 30,
+};
+
+/** パフォーマンス「ファンサ」（レベルアップで取得） */
+export const FANSERVICE_CONFIG = {
+  /** クールタイム（ミリ秒） */
+  COOLDOWN_MS: 5000,
+  /** 強化で短縮できるクールタイムの下限（ミリ秒） */
+  MIN_COOLDOWN_MS: 2000,
+};
+
+/** パフォーマンス「MC」（レベルアップで取得） */
+export const MC_CONFIG = {
+  /** 自動発動の間隔（ミリ秒） */
+  INTERVAL_MS: 20000,
+  /** 効果時間（ミリ秒） */
+  DURATION_MS: 10000,
+  /** 効果中の Heat 上昇量の倍率 */
+  MULTIPLIER: 1.5,
+};
+
+/** アンチ関連 */
+export const ANTI_CONFIG = {
+  /** 見た目のサイズ（px、ひし形の一辺） */
+  SIZE: 18,
+  COLOR: 0x9933ee,
+  /** 移動速度（px/秒） */
+  SPEED: 70,
+  /** 退場までに必要なダメージ量 */
+  MAX_HP: 3,
+  /** プレイヤー接触時に会場全体へ与える Heat 量（負値） */
+  HEAT_DRAIN: -10,
+  /** 最初のスポーンまでの時間（ミリ秒） */
+  FIRST_SPAWN_MS: 12000,
+  /** スポーン間隔（ミリ秒） */
+  SPAWN_INTERVAL_MS: 8000,
+  /** この秒数が経過するごとに 1 回のスポーン数が 1 体増える */
+  RAMP_EVERY_SEC: 40,
+  /** オブジェクトプールの上限 */
+  POOL_SIZE: 12,
+  /** 画面外スポーン時の画面端からの距離（px） */
+  SPAWN_MARGIN: 30,
+};
+
+/** レベルアップ時のアップグレード関連 */
+export const UPGRADE_CONFIG = {
+  /** 提示する選択肢の数 */
+  CHOICES: 3,
+  /** 歌強化 1 回あたりの Heat 量増加 */
+  SONG_HEAT_BONUS: 8,
+  /** 歌強化 1 回あたりのダメージ増加 */
+  SONG_DAMAGE_BONUS: 1,
+  /** ダンス強化 1 回あたりの Heat 量増加 */
+  DANCE_HEAT_BONUS: 10,
+  /** ファンサ強化 1 回あたりのクールタイム短縮（ミリ秒） */
+  FANS_COOLDOWN_STEP_MS: 500,
+  /** MC 強化 1 回あたりの効果時間延長（ミリ秒） */
+  MC_DURATION_BONUS_MS: 2000,
+  /** 範囲 UP 1 回あたりの半径倍率 */
+  RANGE_MULTIPLIER: 1.15,
+  /** 移動速度 UP 1 回あたりの倍率 */
+  SPEED_MULTIPLIER: 1.12,
 };
 
 /** レベル関連 */

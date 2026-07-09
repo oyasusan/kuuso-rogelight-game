@@ -37,6 +37,21 @@ export default class HUD {
       })
       .setOrigin(1, 0)
       .setDepth(DEPTH.UI);
+
+    // 取得済みスキルは画面左下に表示
+    this.skillsText = scene.add
+      .text(12, GAME.HEIGHT - 10, '', {
+        fontFamily: UI_CONFIG.FONT_FAMILY,
+        fontSize: '14px',
+        color: '#ccccee',
+      })
+      .setOrigin(0, 1)
+      .setDepth(DEPTH.UI);
+  }
+
+  /** スキル取得状況の表示を更新する（アップグレード選択時に呼ぶ） */
+  setSkills(summaryText) {
+    this.skillsText.setText(summaryText);
   }
 
   /** 中央揃えの HUD テキストを 1 つ作る */

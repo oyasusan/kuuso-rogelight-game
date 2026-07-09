@@ -1,20 +1,26 @@
 import Phaser from 'phaser';
 import Player from '../objects/Player.js';
-import { SongPerformance } from '../objects/Performance.js';
+import {
+  DancePerformance,
+  FanServicePerformance,
+  MCPerformance,
+  SongPerformance,
+} from '../objects/Performance.js';
 import HeatSystem from '../systems/HeatSystem.js';
 import SpawnSystem from '../systems/SpawnSystem.js';
 import LevelSystem from '../systems/LevelSystem.js';
+import UpgradeSystem from '../systems/UpgradeSystem.js';
 import HUD from '../ui/HUD.js';
+import UpgradePanel from '../ui/UpgradePanel.js';
 import {
+  ANTI_CONFIG,
   AUDIENCE_CONFIG,
   COMBO_CONFIG,
-  DEPTH,
   FRENZY_CONFIG,
   GAME,
   PLAYER_CONFIG,
   SCORE_CONFIG,
   SONG_CONFIG,
-  UI_CONFIG,
 } from '../constants.js';
 
 /**
@@ -32,13 +38,39 @@ export default class GameScene extends Phaser.Scene {
     // --- オブジェクト・システムの初期化 ---
     this.spawnSystem = new SpawnSystem(this);
     this.audiences = this.spawnSystem.spawnAudiences();
+    this.antiGroup = this.spawnSystem.antiGroup;
 
     this.player = new Player(this, GAME.WIDTH / 2, GAME.HEIGHT / 2);
 
     this.heatSystem = new HeatSystem(this.audiences);
     this.levelSystem = new LevelSystem();
-    this.song = new SongPerformance(this, this.player, this.heatSystem);
+
+    // パフォーマンス。歌のみ最初から有効、他はレベルアップで取得
+    this.song = new SongPerformance(
+      this,
+      this.player,
+      this.heatSystem,
+      this.antiGroup,
+    );
+    this.dance = new DancePerformance(this, this.player, this.heatSystem);
+    this.fanService = new FanServicePerformance(
+      this,
+      this.player,
+      this.heatSystem,
+    );
+    this.mc = new MCPerformance(this, this.player, this.heatSystem);
+    this.song.start(SONG_CONFIG.INTERVAL_MS);
+
+    this.upgradeSystem = new UpgradeSystem({
+      player: this.player,
+      song: this.song,
+      dance: this.dance,
+      fanService: this.fanService,
+      mc: this.mc,
+    });
+
     this.hud = new HUD(this);
+    this.upgradePanel = new UpgradePanel(this);
 
     // --- 進行状態 ---
     this.remainingSec = GAME.LIVE_DURATION_SEC;
@@ -46,8 +78,14 @@ export default class GameScene extends Phaser.Scene {
     this.maxCombo = 0;
     this.lastFrenzyAt = 0;
     this.isLiveFinished = false;
+    this.isPaused = false;
+    /** 未消化のレベルアップ回数（連続レベルアップ時に順番に 3 択を出す） */
+    this.pendingUpgrades = 0;
 
-    // --- イベント購読 ---
+    // --- 衝突・イベント ---
+    this.physics.add.overlap(this.player, this.antiGroup, (_player, anti) =>
+      this.onAntiContact(anti),
+    );
     this.heatSystem.on('frenzy', this.onFrenzy, this);
     this.levelSystem.on('levelup', this.onLevelUp, this);
 
@@ -59,20 +97,32 @@ export default class GameScene extends Phaser.Scene {
       callback: this.onSecondTick,
       callbackScope: this,
     });
-    // 歌の自動発動
-    this.time.addEvent({
-      delay: SONG_CONFIG.INTERVAL_MS,
-      loop: true,
-      callback: () => this.song.execute(),
+    // アンチのスポーン（初回は少し遅らせ、以後は一定間隔）
+    this.time.delayedCall(ANTI_CONFIG.FIRST_SPAWN_MS, () => {
+      this.spawnAntiWave();
+      this.time.addEvent({
+        delay: ANTI_CONFIG.SPAWN_INTERVAL_MS,
+        loop: true,
+        callback: this.spawnAntiWave,
+        callbackScope: this,
+      });
     });
 
     this.updateHud();
   }
 
-  /** プレイヤー・観客用のテクスチャを動的生成する（画像アセット不使用） */
+  /** プレイヤー・観客・アンチ用のテクスチャを動的生成する（画像アセット不使用） */
   createTextures() {
     this.createCircleTexture('audience', AUDIENCE_CONFIG.RADIUS);
     this.createCircleTexture('player', PLAYER_CONFIG.RADIUS);
+
+    if (!this.textures.exists('anti')) {
+      const graphics = this.make.graphics({ add: false });
+      graphics.fillStyle(0xffffff);
+      graphics.fillRect(0, 0, ANTI_CONFIG.SIZE, ANTI_CONFIG.SIZE);
+      graphics.generateTexture('anti', ANTI_CONFIG.SIZE, ANTI_CONFIG.SIZE);
+      graphics.destroy();
+    }
   }
 
   /** 白い円のテクスチャを生成する（表示時に tint で着色する） */
@@ -88,10 +138,31 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update() {
-    if (this.isLiveFinished) {
+    if (this.isLiveFinished || this.isPaused) {
       return;
     }
     this.player.update();
+    for (const anti of this.antiGroup.getMatching('active', true)) {
+      anti.chase(this.player);
+    }
+  }
+
+  /** 経過時間に応じた数のアンチを画面外にスポーンさせる */
+  spawnAntiWave() {
+    const elapsedSec = GAME.LIVE_DURATION_SEC - this.remainingSec;
+    const count = 1 + Math.floor(elapsedSec / ANTI_CONFIG.RAMP_EVERY_SEC);
+    this.spawnSystem.spawnAntis(count);
+  }
+
+  /** アンチがプレイヤーに接触したときの処理 */
+  onAntiContact(anti) {
+    if (!anti.active) {
+      return;
+    }
+    anti.despawn();
+    this.heatSystem.applyHeatToAll(ANTI_CONFIG.HEAT_DRAIN);
+    this.cameras.main.flash(200, 120, 0, 40);
+    this.updateHud();
   }
 
   /** 1 秒ごとの進行処理 */
@@ -129,30 +200,51 @@ export default class GameScene extends Phaser.Scene {
     this.updateHud();
   }
 
-  /**
-   * レベルアップ時の処理。
-   * Phase2 でゲームを一時停止して 3 択アップグレードを表示する。
-   * Phase1 では通知テキストのみ。
-   */
-  onLevelUp(newLevel) {
-    const text = this.add
-      .text(GAME.WIDTH / 2, GAME.HEIGHT / 2 - 80, `LEVEL UP! Lv${newLevel}`, {
-        fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '36px',
-        color: UI_CONFIG.ACCENT_COLOR,
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setDepth(DEPTH.UI);
+  /** レベルアップ時の処理。ゲームを停止して 3 択アップグレードを表示する */
+  onLevelUp() {
+    this.pendingUpgrades += 1;
+    if (!this.upgradePanel.isOpen) {
+      this.openUpgradeSelection();
+    }
+  }
 
-    this.tweens.add({
-      targets: text,
-      y: text.y - 40,
-      alpha: 0,
-      duration: 1000,
-      ease: 'Quad.easeOut',
-      onComplete: () => text.destroy(),
+  /** アップグレード選択を開く。連続レベルアップ時は選択後に続けて開く */
+  openUpgradeSelection() {
+    this.pauseGame();
+    this.upgradePanel.open(this.upgradeSystem.pickChoices(), (choice) => {
+      choice.apply();
+      this.hud.setSkills(this.upgradeSystem.summary());
+      this.pendingUpgrades -= 1;
+
+      if (this.pendingUpgrades > 0) {
+        this.openUpgradeSelection();
+      } else {
+        this.resumeGame();
+      }
     });
+  }
+
+  /** ゲームの進行を止める（タイマー・物理・アニメーション） */
+  pauseGame() {
+    if (this.isPaused) {
+      return;
+    }
+    this.isPaused = true;
+    this.physics.pause();
+    this.time.paused = true;
+    this.tweens.pauseAll();
+    this.player.setVelocity(0, 0);
+  }
+
+  /** ゲームの進行を再開する */
+  resumeGame() {
+    if (!this.isPaused) {
+      return;
+    }
+    this.isPaused = false;
+    this.physics.resume();
+    this.time.paused = false;
+    this.tweens.resumeAll();
   }
 
   /** HUD の表示を最新の状態に更新する */
