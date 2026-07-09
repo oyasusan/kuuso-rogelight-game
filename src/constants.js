@@ -161,10 +161,14 @@ export const UPGRADE_CONFIG = {
 
 /** レベル関連 */
 export const LEVEL_CONFIG = {
-  /** レベル 1 → 2 に必要な経験値 */
-  BASE_EXP: 40,
+  /**
+   * レベル 1 → 2 に必要な経験値。
+   * 観客は 112 人 × 10 EXP = 総量 1120 EXP。1 プレイでのレベルアップ回数が
+   * 5 回前後になるよう BASE_EXP と EXP_GROWTH で調整している
+   */
+  BASE_EXP: 70,
   /** レベルが上がるごとの必要経験値の倍率 */
-  EXP_GROWTH: 1.35,
+  EXP_GROWTH: 1.45,
 };
 
 /** コンボ関連（連続して観客を熱狂させると加算） */
