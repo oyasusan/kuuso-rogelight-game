@@ -53,7 +53,7 @@ export default class HomeScene extends Phaser.Scene {
     const centerX = GAME.WIDTH / 2;
 
     this.add
-      .text(centerX, 28, '100秒アイドルライブ', {
+      .text(centerX, 28, '100秒ロマンス', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '30px',
         color: '#ff99cc',
