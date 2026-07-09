@@ -193,14 +193,20 @@ export const ANTI_CONFIG = {
   FIRST_SPAWN_MS: 12000,
   /** スポーン間隔（ミリ秒） */
   SPAWN_INTERVAL_MS: 8000,
-  /** この秒数が経過するごとに 1 回のスポーン数が 1 体増える */
-  RAMP_EVERY_SEC: 40,
+  /**
+   * 1 波あたりの基本スポーン数（ステージの antiWaveMult 適用前）。
+   * 1 体ずつだと「ウェーブ」感が薄いとのフィードバックを受け、まとまった
+   * 人数が一気に出現するようにしている
+   */
+  WAVE_BASE_COUNT: 2,
+  /** この秒数が経過するごとに 1 波あたりの基本スポーン数が 1 体増える */
+  RAMP_EVERY_SEC: 25,
   /**
    * オブジェクトプールの上限。
-   * ドーム級の会場では antiWaveMult により 1 波あたりの出現数が大きく増えるため、
-   * 小箱基準の値より余裕を持たせている
+   * ドーム級の会場では antiWaveMult とウェーブ数増加により同時出現数が
+   * 大きく増えるため、小箱基準の値よりかなり余裕を持たせている
    */
-  POOL_SIZE: 48,
+  POOL_SIZE: 80,
   /** 画面外スポーン時の画面端からの距離（px） */
   SPAWN_MARGIN: 30,
 };
@@ -422,7 +428,7 @@ export const STAGES = [
   {
     id: 'medium',
     name: '中箱',
-    description: '観客 約2倍(220人)\nマップ拡大・アンチ増加・Heat鈍化',
+    description: '観客 約2倍(220人)\nマップ拡大\nアンチ増加',
     bgColor: '#101229',
     worldWidth: 1400,
     worldHeight: 900,
@@ -436,7 +442,7 @@ export const STAGES = [
   {
     id: 'large',
     name: '大箱',
-    description: '観客 約4倍(442人)\nマップ拡大・アンチ強襲・Heat大幅鈍化',
+    description: '観客 約4倍(442人)\nマップ拡大\nアンチ強襲',
     bgColor: '#141026',
     worldWidth: 1700,
     worldHeight: 1200,
@@ -450,7 +456,7 @@ export const STAGES = [
   {
     id: 'arena',
     name: 'アリーナ',
-    description: '観客 約6倍(672人)\nマップ大拡大・アンチ猛攻・Heat鈍化(特大)',
+    description: '観客 約6倍(672人)\nマップ大拡大\nアンチ猛攻',
     bgColor: '#160e22',
     worldWidth: 2050,
     worldHeight: 1450,
@@ -464,7 +470,7 @@ export const STAGES = [
   {
     id: 'dome',
     name: 'ドーム',
-    description: '観客 約8倍(912人)\n最大規模のマップ・全難易度MAX',
+    description: '観客 約8倍(912人)\n最大級マップ\n全難易度MAX',
     bgColor: '#180c1e',
     worldWidth: 2400,
     worldHeight: 1600,

@@ -134,6 +134,8 @@ export default class GameScene extends Phaser.Scene {
     this.isPaused = false;
     /** 未消化のレベルアップ回数（連続レベルアップ時に順番に 3 択を出す） */
     this.pendingUpgrades = 0;
+    /** 何回目のアンチウェーブか（announceWave の表示に使う） */
+    this.waveNumber = 0;
 
     // --- 衝突・イベント ---
     this.physics.add.overlap(this.player, this.antiGroup, (_player, anti) =>
@@ -214,12 +216,56 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 経過時間・ステージ規模に応じた数のアンチを画面外にスポーンさせる */
+  /** 経過時間・ステージ規模に応じた数のアンチを画面外にスポーンさせ、襲来を告知する */
   spawnAntiWave() {
     const elapsedSec = GAME.LIVE_DURATION_SEC - this.remainingSec;
-    const baseCount = 1 + Math.floor(elapsedSec / ANTI_CONFIG.RAMP_EVERY_SEC);
+    const baseCount =
+      ANTI_CONFIG.WAVE_BASE_COUNT +
+      Math.floor(elapsedSec / ANTI_CONFIG.RAMP_EVERY_SEC);
     const count = Math.max(1, Math.round(baseCount * this.mods.antiWaveMult));
     this.spawnSystem.spawnAntis(count);
+
+    this.waveNumber += 1;
+    this.announceWave(this.waveNumber);
+  }
+
+  /** 画面中央にアンチのウェーブ襲来を大きく告知する */
+  announceWave(waveNumber) {
+    audioSystem.playWaveAlert();
+
+    const text = this.add
+      .text(GAME.WIDTH / 2, GAME.HEIGHT / 2 - 70, `ウェーブ${waveNumber} 襲来！`, {
+        fontFamily: UI_CONFIG.FONT_FAMILY,
+        fontSize: '36px',
+        color: '#ff6666',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.UI)
+      .setScrollFactor(0)
+      .setAlpha(0)
+      .setScale(1.3);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 1,
+      scale: 1,
+      duration: 200,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: text,
+          alpha: 0,
+          y: text.y - 24,
+          delay: 700,
+          duration: 500,
+          ease: 'Quad.easeIn',
+          onComplete: () => text.destroy(),
+        });
+      },
+    });
   }
 
   /** アンチがプレイヤーに接触したときの処理 */

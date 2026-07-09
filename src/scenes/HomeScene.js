@@ -24,12 +24,12 @@ const CHARACTER_GRID = {
   TOP_Y: 156,
 };
 
-/** ステージカードの見た目（5 会場を横一列で並べる） */
+/** ステージカードの見た目（5 会場を横一列で並べる。説明は最大 3 行） */
 const STAGE_CARD = {
   WIDTH: 172,
-  HEIGHT: 78,
+  HEIGHT: 90,
   PITCH: 180,
-  Y: 416,
+  Y: 432,
 };
 
 /** 永久強化の解放コストを取得する（未定義なら null） */
@@ -130,7 +130,7 @@ export default class HomeScene extends Phaser.Scene {
 
     // --- ステージ選択（5 会場を横一列で並べる） ---
     this.add
-      .text(centerX, 368, 'ステージ', {
+      .text(centerX, 372, 'ステージ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '16px',
         color: '#8888aa',
@@ -167,7 +167,7 @@ export default class HomeScene extends Phaser.Scene {
 
     // --- スタート ---
     const startText = this.add
-      .text(centerX, 496, 'スペースキーでライブ開始！', {
+      .text(centerX, 505, 'スペースキーでライブ開始！', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '24px',
         color: UI_CONFIG.ACCENT_COLOR,

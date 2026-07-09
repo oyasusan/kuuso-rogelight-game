@@ -283,6 +283,13 @@ class AudioSystem {
     this.tone(this.now, { freq: 280, slideTo: 90, type: 'sawtooth', duration: 0.3, gain: 0.18 });
   }
 
+  /** アンチのウェーブが襲来した（警告として 2 音連続で鳴らす） */
+  playWaveAlert() {
+    if (!this.context) return;
+    this.tone(this.now, { freq: 200, type: 'sawtooth', duration: 0.14, gain: 0.14 });
+    this.tone(this.now + 0.16, { freq: 160, type: 'sawtooth', duration: 0.18, gain: 0.14 });
+  }
+
   /** リザルトのファンファーレ */
   playResultFanfare() {
     if (!this.context) return;
