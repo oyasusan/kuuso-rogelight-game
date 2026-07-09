@@ -49,9 +49,27 @@ export const IDOL_SPRITE_CONFIG = {
   BOOT_DARKEN_FACTOR: 0.55,
 };
 
+/** 観客のドット絵シルエット生成設定（Audience.js の見た目に使用） */
+export const AUDIENCE_SPRITE_CONFIG = {
+  /** ドット 1 マスの描画サイズ（px） */
+  CELL_SIZE: 2,
+  /** グリッドの列数・行数 */
+  GRID_COLS: 8,
+  GRID_ROWS: 10,
+  /** 陰になるセルの暗さ（0〜1、小さいほど暗い） */
+  SHADE_FACTOR: 0.72,
+};
+
+/** アンチのドット絵シルエット生成設定（AntiFan.js の見た目に使用） */
+export const ANTI_SPRITE_CONFIG = {
+  CELL_SIZE: 2,
+  GRID_COLS: 10,
+  GRID_ROWS: 12,
+  SHADE_FACTOR: 0.6,
+};
+
 /** 観客関連 */
 export const AUDIENCE_CONFIG = {
-  RADIUS: 9,
   /** Heat の初期値 */
   INITIAL_HEAT: 20,
   /** Heat の最大値（この値で熱狂状態になる） */
@@ -152,7 +170,7 @@ export const MC_CONFIG = {
 
 /** アンチ関連 */
 export const ANTI_CONFIG = {
-  /** 見た目のサイズ（px、ひし形の一辺） */
+  /** 当たり判定のサイズ（px）。ドット絵の見た目サイズとは独立に調整する */
   SIZE: 18,
   COLOR: 0x9933ee,
   /** 移動速度（px/秒） */

@@ -55,3 +55,40 @@ export function createIdolTexture(scene, key, accentColor) {
   graphics.generateTexture(key, cols * CELL_SIZE, rows * CELL_SIZE);
   graphics.destroy();
 }
+
+/**
+ * tint で着色する前提の、2 階調グレースケールのドット絵シルエットテクスチャを生成する。
+ * 観客・アンチのように「1 つの形状を tint だけで量産する」キャラクターに使う
+ * （複数色で塗ると tint が乗算で濁ってしまうため、あえて白 × 陰の 2 階調にしている）。
+ * 同じ key で既に生成済みならスキップする。
+ * @param {Phaser.Scene} scene
+ * @param {string} key テクスチャキー
+ * @param {() => { cols: number, rows: number, grid: (string|null)[][] }} buildGrid 'base' | 'shade' | null のグリッドを返す関数
+ * @param {number} cellSize ドット 1 マスの描画サイズ（px）
+ * @param {number} shadeFactor 陰の暗さ（0〜1、小さいほど暗い）
+ */
+export function createSilhouetteTexture(scene, key, buildGrid, cellSize, shadeFactor) {
+  if (scene.textures.exists(key)) {
+    return;
+  }
+
+  const { cols, rows, grid } = buildGrid();
+  const palette = {
+    base: 0xffffff,
+    shade: darken(0xffffff, shadeFactor),
+  };
+
+  const graphics = scene.make.graphics({ add: false });
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const cell = grid[row][col];
+      if (!cell) {
+        continue;
+      }
+      graphics.fillStyle(palette[cell]);
+      graphics.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+    }
+  }
+  graphics.generateTexture(key, cols * cellSize, rows * cellSize);
+  graphics.destroy();
+}

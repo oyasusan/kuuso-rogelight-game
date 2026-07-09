@@ -1,20 +1,9 @@
 import { IDOL_SPRITE_CONFIG } from '../constants.js';
+import { inEllipse, symmetricSpan } from './pixelGridHelpers.js';
 
 const { GRID_COLS: COLS, GRID_ROWS: ROWS } = IDOL_SPRITE_CONFIG;
 /** 対称性の軸。セル中心（col + 0.5）でサンプリングするため COLS/2 が正しい中心になる */
 const CENTER_COL = COLS / 2;
-
-function inEllipse(col, row, cx, cy, rx, ry) {
-  const dx = (col + 0.5 - cx) / rx;
-  const dy = (row + 0.5 - cy) / ry;
-  return dx * dx + dy * dy <= 1;
-}
-
-/** CENTER_COL を軸に必ず左右対称になる整数区間 [left, right] を返す */
-function symmetricSpan(halfWidth) {
-  const half = Math.max(1, Math.round(halfWidth));
-  return [CENTER_COL - half, CENTER_COL + half - 1];
-}
 
 /**
  * ドット絵アイドルのシルエットを生成する（純粋関数、Phaser 非依存）。
@@ -74,7 +63,7 @@ export function buildIdolGrid() {
   const rowSpans = [];
   for (let row = bodyRowStart; row <= bodyRowEnd; row += 1) {
     const t = (row - bodyRowStart) / (bodyRowEnd - bodyRowStart);
-    const span = symmetricSpan(shoulderHalf + (hemHalf - shoulderHalf) * t);
+    const span = symmetricSpan(CENTER_COL, shoulderHalf + (hemHalf - shoulderHalf) * t);
     rowSpans[row] = span;
     for (let col = span[0]; col <= span[1]; col += 1) {
       grid[row][col] = row >= 12 ? 'outfitShadow' : 'outfitBase';
@@ -98,7 +87,7 @@ export function buildIdolGrid() {
   grid[6][shoulderRight + 1] = 'skin';
 
   // 脚とブーツ
-  const [legLeft, legRight] = symmetricSpan(2);
+  const [legLeft, legRight] = symmetricSpan(CENTER_COL, 2);
   for (let row = 16; row <= 17; row += 1) {
     grid[row][legLeft] = 'skin';
     grid[row][legLeft + 1] = 'skin';

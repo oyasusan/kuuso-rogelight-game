@@ -12,8 +12,6 @@ export default class AntiFan extends Phaser.Physics.Arcade.Image {
     super(scene, x, y, 'anti');
     this.setTint(ANTI_CONFIG.COLOR);
     this.setDepth(DEPTH.ANTI);
-    // 四角形テクスチャを 45 度回転させてひし形に見せる
-    this.setRotation(Math.PI / 4);
 
     this.hp = ANTI_CONFIG.MAX_HP;
   }
@@ -27,6 +25,11 @@ export default class AntiFan extends Phaser.Physics.Arcade.Image {
     this.setTint(ANTI_CONFIG.COLOR);
     if (this.body) {
       this.body.enable = true;
+      // 見た目のドット絵（フードとマントを含む縦長のシルエット）に関わらず、
+      // 当たり判定は中心付近に絞ったサイズにする（プールされた body に対して都度設定）
+      const size = ANTI_CONFIG.SIZE;
+      this.body.setSize(size, size);
+      this.body.setOffset((this.width - size) / 2, (this.height - size) / 2);
     }
   }
 

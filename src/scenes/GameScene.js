@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import Player from '../objects/Player.js';
-import { createIdolTexture } from '../objects/PixelArt.js';
+import { createIdolTexture, createSilhouetteTexture } from '../objects/PixelArt.js';
+import { buildAudienceGrid } from '../objects/audiencePixelGrid.js';
+import { buildAntiGrid } from '../objects/antiPixelGrid.js';
 import {
   DancePerformance,
   FanServicePerformance,
@@ -18,7 +20,8 @@ import HUD from '../ui/HUD.js';
 import UpgradePanel from '../ui/UpgradePanel.js';
 import {
   ANTI_CONFIG,
-  AUDIENCE_CONFIG,
+  ANTI_SPRITE_CONFIG,
+  AUDIENCE_SPRITE_CONFIG,
   COMBO_CONFIG,
   DEPTH,
   FRENZY_CONFIG,
@@ -151,21 +154,26 @@ export default class GameScene extends Phaser.Scene {
 
   /** 観客・アンチ・プレイヤー用のテクスチャを動的生成する（画像アセット不使用） */
   createTextures() {
-    this.createCircleTexture('audience', AUDIENCE_CONFIG.RADIUS);
     this.createCircleTexture('spark', 3);
     createIdolTexture(
       this,
       `idol-${this.mods.character.id}`,
       this.mods.character.color,
     );
-
-    if (!this.textures.exists('anti')) {
-      const graphics = this.make.graphics({ add: false });
-      graphics.fillStyle(0xffffff);
-      graphics.fillRect(0, 0, ANTI_CONFIG.SIZE, ANTI_CONFIG.SIZE);
-      graphics.generateTexture('anti', ANTI_CONFIG.SIZE, ANTI_CONFIG.SIZE);
-      graphics.destroy();
-    }
+    createSilhouetteTexture(
+      this,
+      'audience',
+      buildAudienceGrid,
+      AUDIENCE_SPRITE_CONFIG.CELL_SIZE,
+      AUDIENCE_SPRITE_CONFIG.SHADE_FACTOR,
+    );
+    createSilhouetteTexture(
+      this,
+      'anti',
+      buildAntiGrid,
+      ANTI_SPRITE_CONFIG.CELL_SIZE,
+      ANTI_SPRITE_CONFIG.SHADE_FACTOR,
+    );
   }
 
   /** 白い円のテクスチャを生成する（表示時に tint で着色する） */
