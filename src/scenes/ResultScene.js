@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME, UI_CONFIG } from '../constants.js';
+import audioSystem from '../systems/AudioSystem.js';
 
 /**
  * リザルト画面。
@@ -23,6 +24,10 @@ export default class ResultScene extends Phaser.Scene {
   }
 
   create() {
+    audioSystem.playResultFanfare();
+    // 歓声をゆっくりフェードアウトさせる
+    audioSystem.setCheerTier(0, 3);
+
     const centerX = GAME.WIDTH / 2;
 
     this.add

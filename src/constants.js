@@ -180,6 +180,48 @@ export const SCORE_CONFIG = {
   COMBO_WEIGHT: 15,
 };
 
+/** 会場演出（平均 Heat に応じて段階的に変化する） */
+export const STAGE_CONFIG = {
+  /**
+   * 演出段階のしきい値（平均 Heat）。
+   * tier0: 静か / tier1: 少し歓声 / tier2: サイリウム /
+   * tier3: 紙吹雪 / tier4: レーザー・歓声最大
+   */
+  TIER_THRESHOLDS: [40, 60, 80, 100],
+  /** 段階が上がったときに表示するアナウンス */
+  TIER_ANNOUNCES: [
+    '',
+    '歓声が上がり始めた！',
+    'サイリウムが揺れる！',
+    '紙吹雪が舞う！',
+    'レーザー全開！歓声最大！',
+  ],
+  /** サイリウムを表示する観客数の上限 */
+  SYLIUM_MAX: 60,
+  /** サイリウムの色（ランダムに選ばれる） */
+  SYLIUM_COLORS: [0xff66cc, 0xffee55, 0x55ffee, 0x99ff66, 0xff9955],
+  /** 紙吹雪の発生間隔（ミリ秒） */
+  CONFETTI_INTERVAL_MS: 70,
+  /** 紙吹雪の色 */
+  CONFETTI_COLORS: [0xff6688, 0xffdd55, 0x66ddff, 0x99ff88, 0xcc88ff],
+  /** レーザーの色 */
+  LASER_COLORS: [0xff33cc, 0x33ffee, 0xaa66ff, 0x66aaff],
+  /** レーザーの本数 */
+  LASER_COUNT: 4,
+};
+
+/** サウンド関連（Web Audio によるプロシージャル生成） */
+export const AUDIO_CONFIG = {
+  /** 全体音量 */
+  MASTER_VOLUME: 0.4,
+  /** BGM のテンポ（BPM） */
+  BGM_TEMPO: 132,
+  /** 演出段階ごとの歓声ノイズの音量 */
+  CHEER_GAINS: [0, 0.04, 0.08, 0.13, 0.2],
+  /** 熱狂 SE の最短再生間隔（ミリ秒、連鎖時の鳴りすぎ防止） */
+  FRENZY_SE_MIN_INTERVAL_MS: 70,
+};
+
 /** UI 関連 */
 export const UI_CONFIG = {
   FONT_FAMILY: '"Hiragino Sans", "Noto Sans JP", sans-serif',

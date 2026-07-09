@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME, UI_CONFIG } from '../constants.js';
+import audioSystem from '../systems/AudioSystem.js';
 
 /**
  * タイトル画面。
@@ -66,6 +67,9 @@ export default class HomeScene extends Phaser.Scene {
   }
 
   startGame() {
+    // 最初のユーザー操作のタイミングで AudioContext を生成する
+    audioSystem.unlock();
+    audioSystem.playStart();
     this.scene.start('GameScene');
   }
 }

@@ -10,12 +10,15 @@ import HeatSystem from '../systems/HeatSystem.js';
 import SpawnSystem from '../systems/SpawnSystem.js';
 import LevelSystem from '../systems/LevelSystem.js';
 import UpgradeSystem from '../systems/UpgradeSystem.js';
+import StageDirector from '../systems/StageDirector.js';
+import audioSystem from '../systems/AudioSystem.js';
 import HUD from '../ui/HUD.js';
 import UpgradePanel from '../ui/UpgradePanel.js';
 import {
   ANTI_CONFIG,
   AUDIENCE_CONFIG,
   COMBO_CONFIG,
+  DEPTH,
   FRENZY_CONFIG,
   GAME,
   PLAYER_CONFIG,
@@ -71,6 +74,23 @@ export default class GameScene extends Phaser.Scene {
 
     this.hud = new HUD(this);
     this.upgradePanel = new UpgradePanel(this);
+    this.stageDirector = new StageDirector(this, this.audiences);
+
+    // 熱狂時に弾けるパーティクル（Phaser のパーティクルは内部でプーリングされる）
+    this.frenzySpark = this.add
+      .particles(0, 0, 'spark', {
+        speed: { min: 40, max: 100 },
+        lifespan: 400,
+        scale: { start: 1, end: 0 },
+        tint: 0xffdd33,
+        blendMode: Phaser.BlendModes.ADD,
+        emitting: false,
+      })
+      .setDepth(DEPTH.EFFECT);
+
+    // BGM 開始（AudioContext はタイトル画面の操作で生成済み）
+    audioSystem.unlock();
+    audioSystem.startBgm();
 
     // --- 進行状態 ---
     this.remainingSec = GAME.LIVE_DURATION_SEC;
@@ -115,6 +135,7 @@ export default class GameScene extends Phaser.Scene {
   createTextures() {
     this.createCircleTexture('audience', AUDIENCE_CONFIG.RADIUS);
     this.createCircleTexture('player', PLAYER_CONFIG.RADIUS);
+    this.createCircleTexture('spark', 3);
 
     if (!this.textures.exists('anti')) {
       const graphics = this.make.graphics({ add: false });
@@ -162,6 +183,8 @@ export default class GameScene extends Phaser.Scene {
     anti.despawn();
     this.heatSystem.applyHeatToAll(ANTI_CONFIG.HEAT_DRAIN);
     this.cameras.main.flash(200, 120, 0, 40);
+    this.cameras.main.shake(150, 0.008);
+    audioSystem.playAntiContact();
     this.updateHud();
   }
 
@@ -172,6 +195,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.heatSystem.chainTick();
+    this.stageDirector.tick(this.heatSystem.averageHeat);
 
     // 一定時間新しい熱狂がなければコンボが途切れる
     if (
@@ -189,8 +213,11 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 観客が熱狂したときの処理（経験値・コンボ） */
-  onFrenzy() {
+  /** 観客が熱狂したときの処理（経験値・コンボ・エフェクト） */
+  onFrenzy(audience) {
+    this.frenzySpark.explode(6, audience.x, audience.y);
+    audioSystem.playFrenzy();
+
     this.levelSystem.gainExp(FRENZY_CONFIG.EXP_PER_FRENZY);
 
     this.combo += 1;
@@ -211,7 +238,9 @@ export default class GameScene extends Phaser.Scene {
   /** アップグレード選択を開く。連続レベルアップ時は選択後に続けて開く */
   openUpgradeSelection() {
     this.pauseGame();
+    audioSystem.playLevelUp();
     this.upgradePanel.open(this.upgradeSystem.pickChoices(), (choice) => {
+      audioSystem.playSelect();
       choice.apply();
       this.hud.setSkills(this.upgradeSystem.summary());
       this.pendingUpgrades -= 1;
@@ -234,6 +263,7 @@ export default class GameScene extends Phaser.Scene {
     this.time.paused = true;
     this.tweens.pauseAll();
     this.player.setVelocity(0, 0);
+    audioSystem.suspend();
   }
 
   /** ゲームの進行を再開する */
@@ -245,6 +275,7 @@ export default class GameScene extends Phaser.Scene {
     this.physics.resume();
     this.time.paused = false;
     this.tweens.resumeAll();
+    audioSystem.resume();
   }
 
   /** HUD の表示を最新の状態に更新する */
@@ -265,6 +296,7 @@ export default class GameScene extends Phaser.Scene {
   endLive() {
     this.isLiveFinished = true;
     this.player.setVelocity(0, 0);
+    audioSystem.stopBgm();
 
     const averageHeat = this.heatSystem.averageHeat;
     const frenzyCount = this.heatSystem.frenzyCount;

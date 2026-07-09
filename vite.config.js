@@ -5,5 +5,11 @@ export default defineConfig({
   base: './',
   server: {
     host: true,
+    watch: {
+      // SD カード（FAT 系ファイルシステム）では inotify によるファイル監視が
+      // 効かないため、ポーリングで変更を検知する
+      usePolling: true,
+      interval: 500,
+    },
   },
 });

@@ -9,6 +9,7 @@ import {
   UI_CONFIG,
 } from '../constants.js';
 import { NoteEffectPool } from './NoteEffect.js';
+import audioSystem from '../systems/AudioSystem.js';
 
 /**
  * パフォーマンスの基底クラス。
@@ -93,11 +94,16 @@ export class SongPerformance extends Performance {
   /** 半径内のアンチへダメージを与える */
   damageAntis(x, y) {
     const radiusSq = this.radius * this.radius;
+    let hitAny = false;
     for (const anti of this.antiGroup.getMatching('active', true)) {
       const distSq = Phaser.Math.Distance.BetweenPointsSquared({ x, y }, anti);
       if (distSq <= radiusSq) {
         anti.takeDamage(this.damage);
+        hitAny = true;
       }
+    }
+    if (hitAny) {
+      audioSystem.playAntiHit();
     }
   }
 
