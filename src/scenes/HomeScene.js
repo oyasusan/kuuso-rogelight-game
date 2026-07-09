@@ -11,6 +11,16 @@ const CARD = {
   BORDER_SELECTED: 0xffdd66,
 };
 
+/** キャラクターカードのグリッド設定（7 人を 4 列×2 行で並べる） */
+const CHARACTER_GRID = {
+  COLS: 4,
+  CARD_WIDTH: 140,
+  CARD_HEIGHT: 128,
+  COL_PITCH: 148,
+  ROW_PITCH: 136,
+  TOP_Y: 156,
+};
+
 /**
  * タイトル画面。
  * キャラクターとステージを選択してライブを開始する。永久強化画面へも遷移できる。
@@ -25,18 +35,18 @@ export default class HomeScene extends Phaser.Scene {
     const centerX = GAME.WIDTH / 2;
 
     this.add
-      .text(centerX, 48, '100秒アイドルライブ', {
+      .text(centerX, 28, '100秒アイドルライブ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '40px',
+        fontSize: '30px',
         color: '#ff99cc',
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
 
     this.add
-      .text(centerX, 88, '100秒で最高のライブを完成させよう（移動: WASD / 矢印キー）', {
+      .text(centerX, 56, '100秒で最高のライブを完成させよう（移動: WASD / 矢印キー）', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '15px',
+        fontSize: '13px',
         color: '#aaaacc',
       })
       .setOrigin(0.5);
@@ -60,9 +70,9 @@ export default class HomeScene extends Phaser.Scene {
       this.scene.start('SettingsScene');
     });
 
-    // --- キャラクター選択 ---
+    // --- キャラクター選択（4列×2行のグリッド。行ごとに中央寄せする） ---
     this.add
-      .text(centerX, 128, 'キャラクター', {
+      .text(centerX, 82, 'キャラクター', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '16px',
         color: '#8888aa',
@@ -70,15 +80,22 @@ export default class HomeScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.characterCards = CHARACTERS.map((character, index) => {
-      const x = centerX + (index - 1) * 230;
+      const { COLS, CARD_WIDTH, CARD_HEIGHT, COL_PITCH, ROW_PITCH, TOP_Y } =
+        CHARACTER_GRID;
+      const row = Math.floor(index / COLS);
+      const col = index % COLS;
+      const itemsInRow = Math.min(COLS, CHARACTERS.length - row * COLS);
+      const x = centerX + (col - (itemsInRow - 1) / 2) * COL_PITCH;
+      const y = TOP_Y + row * ROW_PITCH;
       return this.createSelectCard({
         x,
-        y: 205,
-        width: 210,
-        height: 120,
+        y,
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
         title: character.name,
         titleColor: character.color,
         description: character.description,
+        descriptionFontSize: '12px',
         isSelected: () => saveSystem.data.characterId === character.id,
         onClick: () => {
           saveSystem.data.characterId = character.id;
@@ -89,7 +106,7 @@ export default class HomeScene extends Phaser.Scene {
 
     // --- ステージ選択 ---
     this.add
-      .text(centerX, 296, 'ステージ', {
+      .text(centerX, 368, 'ステージ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '16px',
         color: '#8888aa',
@@ -100,9 +117,9 @@ export default class HomeScene extends Phaser.Scene {
       const x = centerX + (index - 0.5) * 250;
       return this.createSelectCard({
         x,
-        y: 365,
+        y: 416,
         width: 230,
-        height: 90,
+        height: 76,
         title: stage.name,
         titleColor: 0xffffff,
         description: stage.description,
@@ -118,9 +135,9 @@ export default class HomeScene extends Phaser.Scene {
 
     // --- スタート ---
     const startText = this.add
-      .text(centerX, 480, 'スペースキーでライブ開始！', {
+      .text(centerX, 496, 'スペースキーでライブ開始！', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '26px',
+        fontSize: '24px',
         color: UI_CONFIG.ACCENT_COLOR,
       })
       .setOrigin(0.5)
@@ -142,16 +159,27 @@ export default class HomeScene extends Phaser.Scene {
    * 選択カードを 1 枚作る。
    * @returns {{ refresh: Function }} 選択状態の再描画関数を持つオブジェクト
    */
-  createSelectCard({ x, y, width, height, title, titleColor, description, isSelected, onClick }) {
+  createSelectCard({
+    x,
+    y,
+    width,
+    height,
+    title,
+    titleColor,
+    description,
+    descriptionFontSize = '13px',
+    isSelected,
+    onClick,
+  }) {
     const rect = this.add
       .rectangle(x, y, width, height, CARD.COLOR)
       .setStrokeStyle(2, CARD.BORDER)
       .setInteractive({ useHandCursor: true });
 
     this.add
-      .text(x, y - height / 2 + 24, title, {
+      .text(x, y - height / 2 + 20, title, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '20px',
+        fontSize: '18px',
         color: '#ffffff',
         fontStyle: 'bold',
       })
@@ -159,12 +187,12 @@ export default class HomeScene extends Phaser.Scene {
       .setTint(titleColor);
 
     this.add
-      .text(x, y + 14, description, {
+      .text(x, y + 12, description, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '13px',
+        fontSize: descriptionFontSize,
         color: '#bbbbdd',
         align: 'center',
-        lineSpacing: 4,
+        lineSpacing: 3,
       })
       .setOrigin(0.5);
 

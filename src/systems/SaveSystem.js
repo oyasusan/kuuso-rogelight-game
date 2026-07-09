@@ -18,7 +18,7 @@ const DEFAULT_SAVE = {
   /** 永久強化の取得ランク（id → ランク） */
   permaRanks: {},
   /** 選択中のキャラクター id */
-  characterId: 'aika',
+  characterId: 'suzu',
   /** 選択中のステージ id */
   stageId: 'hall',
 };

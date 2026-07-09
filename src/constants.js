@@ -293,34 +293,72 @@ export const AUDIO_CONFIG = {
 /**
  * プレイアブルキャラクター。
  * songHeatMult: 歌の Heat 量倍率 / songRadiusMult: 歌の半径倍率 / speedMult: 移動速度倍率
+ * どのキャラクターも「2 種類を強化する代わりに 1 種類を犠牲にする」形の
+ * トレードオフで構成し、一方的に強い／弱いキャラクターが生まれないようにしている。
  */
 export const CHARACTERS = [
   {
-    id: 'aika',
-    name: 'アイカ',
+    id: 'suzu',
+    name: 'すず',
+    description: '情熱型\n歌のHeat +35%\n移動速度 -10%',
+    color: 0xff3355,
+    songHeatMult: 1.35,
+    songRadiusMult: 1,
+    speedMult: 0.9,
+  },
+  {
+    id: 'ami',
+    name: 'あみ',
     description: 'バランス型\nクセがなく扱いやすい',
-    color: 0xff66aa,
+    color: 0x55ccee,
     songHeatMult: 1,
     songRadiusMult: 1,
     speedMult: 1,
   },
   {
-    id: 'mio',
-    name: 'ミオ',
-    description: '歌姫型\n歌のHeat +30%\n移動速度 -10%',
-    color: 0x66aaff,
-    songHeatMult: 1.3,
-    songRadiusMult: 1,
-    speedMult: 0.9,
-  },
-  {
-    id: 'rin',
-    name: 'リン',
+    id: 'yui',
+    name: 'ゆい',
     description: 'スピード型\n移動速度 +25%\n歌の範囲 -15%',
-    color: 0xffaa44,
+    color: 0xffdd44,
     songHeatMult: 1,
     songRadiusMult: 0.85,
     speedMult: 1.25,
+  },
+  {
+    id: 'uyu',
+    name: 'うゆ',
+    description: '範囲型\n歌の範囲 +30%\n歌のHeat -15%',
+    color: 0x66cc66,
+    songHeatMult: 0.85,
+    songRadiusMult: 1.3,
+    speedMult: 1,
+  },
+  {
+    id: 'mirei',
+    name: 'みれい',
+    description: '機動支援型\n移動速度 +15%\n歌の範囲 +15%\n歌のHeat -20%',
+    color: 0xff88cc,
+    songHeatMult: 0.8,
+    songRadiusMult: 1.15,
+    speedMult: 1.15,
+  },
+  {
+    id: 'kotone',
+    name: 'ことね',
+    description: '求心力型\n歌のHeat +20%\n歌の範囲 +15%\n移動速度 -20%',
+    color: 0xff9933,
+    songHeatMult: 1.2,
+    songRadiusMult: 1.15,
+    speedMult: 0.8,
+  },
+  {
+    id: 'mayupi',
+    name: 'まゆぴ',
+    description: '俊敏型\n歌のHeat +15%\n移動速度 +15%\n歌の範囲 -20%',
+    color: 0xaa66ee,
+    songHeatMult: 1.15,
+    songRadiusMult: 0.8,
+    speedMult: 1.15,
   },
 ];
 
