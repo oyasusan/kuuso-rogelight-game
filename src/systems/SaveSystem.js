@@ -69,6 +69,13 @@ class SaveSystem {
     this.data.fans += amount;
     this.persist();
   }
+
+  /** 永久強化の進行（所持ファン・全ランク）をリセットする。キャラ/ステージ選択は保持する */
+  resetPermanent() {
+    this.data.fans = 0;
+    this.data.permaRanks = {};
+    this.persist();
+  }
 }
 
 /** シングルトン。各シーンから import して使う */

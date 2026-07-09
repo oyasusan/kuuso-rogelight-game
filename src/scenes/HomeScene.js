@@ -54,6 +54,11 @@ export default class HomeScene extends Phaser.Scene {
       audioSystem.playSelect();
       this.scene.start('PermanentUpgradeScene');
     });
+    this.createButton(GAME.WIDTH - 84, 98, 130, 30, '設定', () => {
+      audioSystem.unlock();
+      audioSystem.playSelect();
+      this.scene.start('SettingsScene');
+    });
 
     // --- キャラクター選択 ---
     this.add
