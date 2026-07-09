@@ -33,7 +33,7 @@ export default class ResultScene extends Phaser.Scene {
     const fansEarned = Math.round(this.result.score / PERMA_CONFIG.SCORE_PER_FAN);
     saveSystem.addFans(fansEarned);
 
-    const centerX = GAME.WIDTH / 2;
+    const centerX = this.scale.width / 2;
 
     this.add
       .text(centerX, 90, 'ライブ終了！', {
@@ -82,7 +82,7 @@ export default class ResultScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(centerX, 460, 'スペースキー / クリックで永久強化へ', {
+      .text(centerX, 460, 'タップ / スペースキーで永久強化へ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '20px',
         color: '#aaaacc',

@@ -3,7 +3,6 @@ import {
   DANCE_CONFIG,
   DEPTH,
   FANSERVICE_CONFIG,
-  GAME,
   MC_CONFIG,
   SONG_CONFIG,
   UI_CONFIG,
@@ -278,7 +277,7 @@ export class MCPerformance extends Performance {
     this.isRunning = false;
 
     this.indicator = scene.add
-      .text(GAME.WIDTH / 2, 72, `MC TIME! Heat×${MC_CONFIG.MULTIPLIER}`, {
+      .text(scene.scale.width / 2, 72, `MC TIME! Heat×${MC_CONFIG.MULTIPLIER}`, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '22px',
         color: UI_CONFIG.ACCENT_COLOR,

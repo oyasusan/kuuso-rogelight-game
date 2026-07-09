@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
-import { GAME, PERMA_CONFIG, UI_CONFIG } from '../constants.js';
+import { DEPTH, GAME, PERMA_CONFIG, UI_CONFIG } from '../constants.js';
 import audioSystem from '../systems/AudioSystem.js';
 import saveSystem from '../systems/SaveSystem.js';
+import { enableVerticalScroll } from '../ui/scrollHelper.js';
 
-/** 行の見た目 */
+/** 行の見た目（狭い画面では ROW_NARROW を使い、ランク表示とボタンを 2 段目に落とす） */
 const ROW = {
-  WIDTH: 760,
+  MAX_WIDTH: 760,
   HEIGHT: 56,
   GAP: 8,
   TOP_Y: 150,
@@ -13,12 +14,15 @@ const ROW = {
   BUTTON_COLOR: 0x2d2d55,
   BUTTON_DISABLED: 0x22222e,
 };
+const ROW_NARROW_HEIGHT = 84;
+/** 横幅がこれ未満なら「狭い画面」向けレイアウト（2 段組の行）に切り替える */
+const NARROW_THRESHOLD = 560;
 
 /** タブの定義。category は PERMA_CONFIG.UPGRADES の各項目の category と対応する */
 const TABS = [
-  { category: 'stat', label: 'ステータス強化' },
-  { category: 'character', label: 'キャラクター解放' },
-  { category: 'stage', label: '会場解放' },
+  { category: 'stat', label: 'ステータス強化', shortLabel: 'ステータス' },
+  { category: 'character', label: 'キャラクター解放', shortLabel: 'キャラ' },
+  { category: 'stage', label: '会場解放', shortLabel: '会場' },
 ];
 
 /**
@@ -26,6 +30,9 @@ const TABS = [
  * ライブで獲得したファンを消費して、ラン間で持ち越す強化・キャラクター/会場の
  * 解放を購入する。項目数が多いため、カテゴリごとにタブで切り替えて表示する。
  * リザルトの後、およびタイトルから遷移する。
+ *
+ * 横幅に応じて行の中身を横並び（PC）/ 2 段組（スマホ縦画面）に切り替える
+ * レスポンシブ構成。固定座標ではなく this.scale.width/height を毎回読む。
  */
 export default class PermanentUpgradeScene extends Phaser.Scene {
   constructor() {
@@ -33,13 +40,18 @@ export default class PermanentUpgradeScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(GAME.BACKGROUND_COLOR);
-    const centerX = GAME.WIDTH / 2;
+    const width = this.scale.width;
+    const height = this.scale.height;
+    const centerX = width / 2;
     this.centerX = centerX;
+    this.rowWidth = Math.min(ROW.MAX_WIDTH, width - 40);
+    this.isNarrow = this.rowWidth < NARROW_THRESHOLD;
     this.activeCategory = TABS[0].category;
     /** 現在のタブで表示中の行（タブ切り替え時にまとめて破棄する） */
     this.rowObjects = [];
     this.rowRefreshers = [];
+
+    this.cameras.main.setBackgroundColor(GAME.BACKGROUND_COLOR);
 
     this.add
       .text(centerX, 36, '永久強化', {
@@ -58,34 +70,66 @@ export default class PermanentUpgradeScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    const tabGap = 8;
+    const tabWidth = Math.min(190, Math.floor((this.rowWidth - tabGap * 2) / 3));
+    const tabPitch = tabWidth + tabGap;
     this.tabButtons = TABS.map((tab, index) =>
-      this.createTabButton(tab, centerX + (index - 1) * 200, 100),
+      this.createTabButton(
+        tab,
+        centerX + (index - 1) * tabPitch,
+        100,
+        tabWidth,
+      ),
     );
 
     this.showCategory(this.activeCategory);
 
+    // 戻る導線は画面下端に固定表示する（スクロールしても常に押せるように）
+    const footerHeight = 44;
+    const footerY = height - footerHeight / 2;
+    this.add
+      .rectangle(centerX, footerY, width, footerHeight, 0x06060e, 0.85)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.UI);
     const backText = this.add
-      .text(centerX, GAME.HEIGHT - 28, 'スペースキー / クリックでタイトルへ', {
+      .text(centerX, footerY, 'タップ / スペースキーでタイトルへ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '16px',
         color: '#aaaacc',
       })
       .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(DEPTH.UI)
       .setInteractive({ useHandCursor: true });
     backText.on('pointerdown', () => this.backToTitle());
     this.input.keyboard.once('keydown-SPACE', () => this.backToTitle());
+
+    // 画面に収まらない場合はドラッグ／ホイールでスクロールできるようにする
+    // （タブの中で最も行数が多いカテゴリを基準に、固定フッターの余白も足す）
+    const rowHeight = this.isNarrow ? ROW_NARROW_HEIGHT : ROW.HEIGHT;
+    const rowPitch = rowHeight + ROW.GAP;
+    const maxRowCount = Math.max(
+      ...TABS.map(
+        (tab) =>
+          PERMA_CONFIG.UPGRADES.filter((u) => u.category === tab.category)
+            .length,
+      ),
+    );
+    const contentBottom =
+      ROW.TOP_Y + (maxRowCount - 1) * rowPitch + rowHeight / 2 + 20;
+    enableVerticalScroll(this, contentBottom + footerHeight + 10);
   }
 
   /** タブボタンを 1 つ作る */
-  createTabButton(tab, x, y) {
+  createTabButton(tab, x, y, width) {
     const rect = this.add
-      .rectangle(x, y, 190, 34, 0x1a1a33)
+      .rectangle(x, y, width, 34, 0x1a1a33)
       .setStrokeStyle(1, 0x444466)
       .setInteractive({ useHandCursor: true });
     const label = this.add
-      .text(x, y, tab.label, {
+      .text(x, y, this.isNarrow ? tab.shortLabel : tab.label, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '15px',
+        fontSize: this.isNarrow ? '13px' : '15px',
         color: '#ccccee',
       })
       .setOrigin(0.5);
@@ -114,21 +158,20 @@ export default class PermanentUpgradeScene extends Phaser.Scene {
     }
     this.rowObjects = [];
 
+    const rowHeight = this.isNarrow ? ROW_NARROW_HEIGHT : ROW.HEIGHT;
+    const rowPitch = rowHeight + ROW.GAP;
     const upgrades = PERMA_CONFIG.UPGRADES.filter(
       (u) => u.category === category,
     );
     this.rowRefreshers = upgrades.map((upgrade, index) =>
-      this.createRow(
-        upgrade,
-        this.centerX,
-        ROW.TOP_Y + index * (ROW.HEIGHT + ROW.GAP),
-      ),
+      this.createRow(upgrade, this.centerX, ROW.TOP_Y + index * rowPitch),
     );
     this.refresh();
   }
 
   /**
    * 強化 1 種類分の行（説明＋購入ボタン）を作る。
+   * 横幅が狭い場合は名前/説明を上段、ランクとボタンを下段に分ける 2 段組にする。
    * @returns {Function} 表示更新関数
    */
   createRow(upgrade, centerX, y) {
@@ -136,43 +179,58 @@ export default class PermanentUpgradeScene extends Phaser.Scene {
       this.rowObjects.push(object);
       return object;
     };
+    const { rowWidth, isNarrow } = this;
+    const rowHeight = isNarrow ? ROW_NARROW_HEIGHT : ROW.HEIGHT;
+    const left = centerX - rowWidth / 2;
+    const right = centerX + rowWidth / 2;
 
     track(
       this.add
-        .rectangle(centerX, y, ROW.WIDTH, ROW.HEIGHT, ROW.COLOR)
+        .rectangle(centerX, y, rowWidth, rowHeight, ROW.COLOR)
         .setStrokeStyle(1, 0x444466),
     );
 
-    const left = centerX - ROW.WIDTH / 2;
     track(
-      this.add.text(left + 18, y - 17, upgrade.name, {
+      this.add.text(left + 16, y - (isNarrow ? 34 : 17), upgrade.name, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '16px',
+        fontSize: '15px',
         color: '#ffffff',
         fontStyle: 'bold',
       }),
     );
     track(
-      this.add.text(left + 18, y + 4, upgrade.description, {
+      this.add.text(left + 16, y - (isNarrow ? 14 : -4), upgrade.description, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '12px',
+        fontSize: '11px',
         color: '#bbbbdd',
+        wordWrap: isNarrow ? { width: rowWidth - 32 } : undefined,
       }),
     );
 
     const rankText = track(
-      this.add
-        .text(centerX + 140, y, '', {
-          fontFamily: UI_CONFIG.FONT_FAMILY,
-          fontSize: '14px',
-          color: '#ccccee',
-        })
-        .setOrigin(0.5),
+      isNarrow
+        ? this.add
+            .text(left + 16, y + 26, '', {
+              fontFamily: UI_CONFIG.FONT_FAMILY,
+              fontSize: '13px',
+              color: '#ccccee',
+            })
+            .setOrigin(0, 0.5)
+        : this.add
+            .text(centerX + 140, y, '', {
+              fontFamily: UI_CONFIG.FONT_FAMILY,
+              fontSize: '14px',
+              color: '#ccccee',
+            })
+            .setOrigin(0.5),
     );
 
+    const buttonWidth = isNarrow ? 108 : 120;
+    const buttonX = isNarrow ? right - buttonWidth / 2 - 10 : right - 75;
+    const buttonY = isNarrow ? y + 26 : y;
     const button = track(
       this.add
-        .rectangle(centerX + ROW.WIDTH / 2 - 75, y, 120, 40, ROW.BUTTON_COLOR)
+        .rectangle(buttonX, buttonY, buttonWidth, 34, ROW.BUTTON_COLOR)
         .setStrokeStyle(1, 0xffdd66)
         .setInteractive({ useHandCursor: true }),
     );
@@ -180,7 +238,7 @@ export default class PermanentUpgradeScene extends Phaser.Scene {
       this.add
         .text(button.x, button.y, '', {
           fontFamily: UI_CONFIG.FONT_FAMILY,
-          fontSize: '14px',
+          fontSize: '13px',
           color: UI_CONFIG.ACCENT_COLOR,
         })
         .setOrigin(0.5),

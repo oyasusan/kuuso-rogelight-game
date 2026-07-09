@@ -315,7 +315,7 @@ export default class GameScene extends Phaser.Scene {
     audioSystem.playBossAlert();
 
     const text = this.add
-      .text(GAME.WIDTH / 2, GAME.HEIGHT / 2 - 70, 'ボス出現！', {
+      .text(this.scale.width / 2, this.scale.height / 2 - 70, 'ボス出現！', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '44px',
         color: '#ff2244',
@@ -385,7 +385,7 @@ export default class GameScene extends Phaser.Scene {
     audioSystem.playWaveAlert();
 
     const text = this.add
-      .text(GAME.WIDTH / 2, GAME.HEIGHT / 2 - 70, `ウェーブ${waveNumber} 襲来！`, {
+      .text(this.scale.width / 2, this.scale.height / 2 - 70, `ウェーブ${waveNumber} 襲来！`, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '36px',
         color: '#ff6666',

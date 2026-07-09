@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { DEPTH, GAME, STAGE_CONFIG, UI_CONFIG } from '../constants.js';
+import { DEPTH, STAGE_CONFIG, UI_CONFIG } from '../constants.js';
 import audioSystem from './AudioSystem.js';
 
 /**
@@ -84,7 +84,7 @@ export default class StageDirector {
       return;
     }
     const text = this.scene.add
-      .text(GAME.WIDTH / 2, GAME.HEIGHT / 2 - 120, message, {
+      .text(this.scene.scale.width / 2, this.scene.scale.height / 2 - 120, message, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '30px',
         color: UI_CONFIG.ACCENT_COLOR,
@@ -174,7 +174,7 @@ export default class StageDirector {
     if (active && !this.confetti) {
       this.confetti = this.scene.add
         .particles(0, 0, 'confetti', {
-          x: { min: 0, max: GAME.WIDTH },
+          x: { min: 0, max: this.scene.scale.width },
           y: -10,
           lifespan: 4500,
           speedY: { min: 60, max: 140 },
@@ -207,11 +207,13 @@ export default class StageDirector {
     const visible = this.tier >= 4;
 
     if (visible && this.lasers.length === 0) {
+      const width = this.scene.scale.width;
+      const height = this.scene.scale.height;
       for (let i = 0; i < STAGE_CONFIG.LASER_COUNT; i += 1) {
-        const x = (GAME.WIDTH / (STAGE_CONFIG.LASER_COUNT + 1)) * (i + 1);
+        const x = (width / (STAGE_CONFIG.LASER_COUNT + 1)) * (i + 1);
         const color = STAGE_CONFIG.LASER_COLORS[i % STAGE_CONFIG.LASER_COLORS.length];
         const laser = this.scene.add
-          .rectangle(x, 0, 4, GAME.HEIGHT * 1.5, color, 0.35)
+          .rectangle(x, 0, 4, height * 1.5, color, 0.35)
           .setOrigin(0.5, 0)
           .setBlendMode(Phaser.BlendModes.ADD)
           .setDepth(DEPTH.EFFECT)

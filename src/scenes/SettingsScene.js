@@ -14,6 +14,8 @@ const BUTTON = {
  * 設定画面。
  * 現状は永久強化（所持ファン・全ランク）のリセットのみを提供する。
  * 取り消せない操作のため、実行前に確認ダイアログを挟む。
+ *
+ * 固定座標ではなく this.scale.width/height から組み立てるレスポンシブ構成。
  */
 export default class SettingsScene extends Phaser.Scene {
   constructor() {
@@ -21,11 +23,17 @@ export default class SettingsScene extends Phaser.Scene {
   }
 
   create() {
+    const width = this.scale.width;
+    const height = this.scale.height;
+    this.width = width;
+    this.height = height;
+    const centerX = width / 2;
+    const boxWidth = Math.min(640, width - 40);
+
     this.cameras.main.setBackgroundColor(GAME.BACKGROUND_COLOR);
-    const centerX = GAME.WIDTH / 2;
 
     this.add
-      .text(centerX, 60, '設定', {
+      .text(centerX, 50, '設定', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '34px',
         color: '#ff99cc',
@@ -34,38 +42,41 @@ export default class SettingsScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .rectangle(centerX, 220, 640, 140, BUTTON.COLOR)
+      .rectangle(centerX, 210, boxWidth, 190, BUTTON.COLOR)
       .setStrokeStyle(1, 0x444466);
 
-    this.add.text(centerX - 290, 172, '永久強化をリセット', {
+    const boxLeft = centerX - boxWidth / 2;
+    this.add.text(boxLeft + 20, 142, '永久強化をリセット', {
       fontFamily: UI_CONFIG.FONT_FAMILY,
       fontSize: '20px',
       color: '#ffffff',
       fontStyle: 'bold',
     });
     this.add.text(
-      centerX - 290,
-      202,
+      boxLeft + 20,
+      172,
       '所持ファンと、購入した永久強化のランク・解放をすべて 0 に戻します。\nキャラクター・ステージの選択も初期状態（すず / 小箱）に戻ります。この操作は取り消せません。',
       {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '14px',
         color: '#bbbbdd',
         lineSpacing: 6,
+        wordWrap: { width: boxWidth - 40 },
       },
     );
 
-    this.createButton(centerX, 268, 220, 44, 'リセットする', BUTTON.DANGER_BORDER, () =>
+    this.createButton(centerX, 310, 220, 44, 'リセットする', BUTTON.DANGER_BORDER, () =>
       this.confirmReset(),
     );
 
     const backText = this.add
-      .text(centerX, GAME.HEIGHT - 32, 'スペースキー / クリックでタイトルへ', {
+      .text(centerX, height - 32, 'タップ / スペースキーでタイトルへ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '18px',
         color: '#aaaacc',
       })
       .setOrigin(0.5)
+      .setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
     backText.on('pointerdown', () => this.backToTitle());
     this.spaceKeyHandler = () => this.backToTitle();
@@ -98,14 +109,15 @@ export default class SettingsScene extends Phaser.Scene {
     // 確認中はタイトルへ戻るショートカットを無効化する（誤操作防止）
     this.input.keyboard.off('keydown-SPACE', this.spaceKeyHandler);
 
+    const { width, height } = this;
     const overlay = this.add
-      .rectangle(0, 0, GAME.WIDTH, GAME.HEIGHT, 0x000000, 0.7)
+      .rectangle(0, 0, width, height, 0x000000, 0.7)
       .setOrigin(0)
       .setDepth(DEPTH.OVERLAY)
       .setInteractive();
 
-    const centerX = GAME.WIDTH / 2;
-    const centerY = GAME.HEIGHT / 2;
+    const centerX = width / 2;
+    const centerY = height / 2;
 
     const objects = [overlay];
     objects.push(
@@ -181,7 +193,7 @@ export default class SettingsScene extends Phaser.Scene {
   /** 画面下部に短く表示して消えるメッセージ */
   showToast(message) {
     const text = this.add
-      .text(GAME.WIDTH / 2, GAME.HEIGHT - 80, message, {
+      .text(this.width / 2, this.height - 80, message, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '16px',
         color: UI_CONFIG.ACCENT_COLOR,
