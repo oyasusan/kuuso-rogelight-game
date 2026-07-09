@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import Player from '../objects/Player.js';
+import { createIdolTexture } from '../objects/PixelArt.js';
 import {
   DancePerformance,
   FanServicePerformance,
@@ -22,7 +23,6 @@ import {
   DEPTH,
   FRENZY_CONFIG,
   GAME,
-  PLAYER_CONFIG,
   SCORE_CONFIG,
   SONG_CONFIG,
   UI_CONFIG,
@@ -38,11 +38,12 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    this.createTextures();
-
     // 選択中のキャラクター・ステージ・永久強化から今回のラン設定を組み立てる
+    // （キャラクターのドット絵テクスチャ生成に必要なため、テクスチャ作成より先に行う）
     this.mods = buildRunModifiers();
     this.cameras.main.setBackgroundColor(this.mods.stage.bgColor);
+
+    this.createTextures();
 
     // --- オブジェクト・システムの初期化 ---
     this.spawnSystem = new SpawnSystem(this);
@@ -52,8 +53,12 @@ export default class GameScene extends Phaser.Scene {
     );
     this.antiGroup = this.spawnSystem.antiGroup;
 
-    this.player = new Player(this, GAME.WIDTH / 2, GAME.HEIGHT / 2);
-    this.player.setTint(this.mods.character.color);
+    this.player = new Player(
+      this,
+      GAME.WIDTH / 2,
+      GAME.HEIGHT / 2,
+      `idol-${this.mods.character.id}`,
+    );
     this.player.moveSpeed = this.mods.playerSpeed;
 
     this.heatSystem = new HeatSystem(this.audiences);
@@ -144,11 +149,15 @@ export default class GameScene extends Phaser.Scene {
     this.updateHud();
   }
 
-  /** プレイヤー・観客・アンチ用のテクスチャを動的生成する（画像アセット不使用） */
+  /** 観客・アンチ・プレイヤー用のテクスチャを動的生成する（画像アセット不使用） */
   createTextures() {
     this.createCircleTexture('audience', AUDIENCE_CONFIG.RADIUS);
-    this.createCircleTexture('player', PLAYER_CONFIG.RADIUS);
     this.createCircleTexture('spark', 3);
+    createIdolTexture(
+      this,
+      `idol-${this.mods.character.id}`,
+      this.mods.character.color,
+    );
 
     if (!this.textures.exists('anti')) {
       const graphics = this.make.graphics({ add: false });

@@ -27,8 +27,26 @@ export const DEPTH = {
 export const PLAYER_CONFIG = {
   /** 移動速度（px/秒） */
   SPEED: 240,
+  /** 当たり判定の半径相当（px）。ドット絵の見た目サイズとは独立に調整する */
   RADIUS: 14,
-  COLOR: 0xff66aa,
+};
+
+/** ドット絵アイドルの生成設定（Player.js の見た目に使用） */
+export const IDOL_SPRITE_CONFIG = {
+  /** ドット 1 マスの描画サイズ（px） */
+  CELL_SIZE: 2,
+  /** グリッドの列数・行数 */
+  GRID_COLS: 14,
+  GRID_ROWS: 20,
+  /** 肌色（キャラクター共通） */
+  SKIN_COLOR: 0xffe0c2,
+  /** 目の色（キャラクター共通） */
+  EYE_COLOR: 0x2a2035,
+  /** 衣装のベース色・影色（キャラクター共通。差し色は CHARACTERS の color を使う） */
+  OUTFIT_BASE_COLOR: 0xfff6f4,
+  OUTFIT_SHADOW_COLOR: 0xe6d9de,
+  /** ブーツに使う、差し色を暗くする倍率（0〜1、小さいほど暗い） */
+  BOOT_DARKEN_FACTOR: 0.55,
 };
 
 /** 観客関連 */

@@ -10,15 +10,24 @@ export default class Player extends Phaser.Physics.Arcade.Image {
    * @param {Phaser.Scene} scene
    * @param {number} x
    * @param {number} y
+   * @param {string} textureKey ドット絵アイドルのテクスチャキー（例: 'idol-aika'）
    */
-  constructor(scene, x, y) {
-    super(scene, x, y, 'player');
+  constructor(scene, x, y, textureKey) {
+    super(scene, x, y, textureKey);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.setTint(PLAYER_CONFIG.COLOR);
     this.setDepth(DEPTH.PLAYER);
     this.setCollideWorldBounds(true);
+
+    // 見た目のスプライト（頭〜足まで含む縦長のドット絵）に関わらず、
+    // 当たり判定は胴体中心付近に絞ったサイズにする
+    const diameter = PLAYER_CONFIG.RADIUS * 2;
+    this.body.setSize(diameter, diameter);
+    this.body.setOffset(
+      (this.width - diameter) / 2,
+      (this.height - diameter) / 2,
+    );
 
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.wasd = scene.input.keyboard.addKeys({
