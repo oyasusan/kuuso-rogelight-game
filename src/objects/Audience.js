@@ -17,14 +17,15 @@ export default class Audience extends Phaser.GameObjects.Image {
    * @param {Phaser.Scene} scene
    * @param {number} x
    * @param {number} y
+   * @param {number} [initialHeat] 初期 Heat（永久強化で上がる）
    */
-  constructor(scene, x, y) {
+  constructor(scene, x, y, initialHeat = AUDIENCE_CONFIG.INITIAL_HEAT) {
     super(scene, x, y, 'audience');
     scene.add.existing(this);
     this.setDepth(DEPTH.AUDIENCE);
 
     /** 熱量（0〜MAX_HEAT） */
-    this.heat = AUDIENCE_CONFIG.INITIAL_HEAT;
+    this.heat = initialHeat;
     /** 感情（将来の拡張用） */
     this.mood = MOOD.NORMAL;
     /** 熱狂状態かどうか */

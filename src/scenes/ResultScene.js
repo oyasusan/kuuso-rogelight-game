@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { GAME, UI_CONFIG } from '../constants.js';
+import { GAME, PERMA_CONFIG, UI_CONFIG } from '../constants.js';
 import audioSystem from '../systems/AudioSystem.js';
+import saveSystem from '../systems/SaveSystem.js';
 
 /**
  * リザルト画面。
@@ -27,6 +28,10 @@ export default class ResultScene extends Phaser.Scene {
     audioSystem.playResultFanfare();
     // 歓声をゆっくりフェードアウトさせる
     audioSystem.setCheerTier(0, 3);
+
+    // スコアに応じてファン（永久強化の通貨）を獲得する
+    const fansEarned = Math.round(this.result.score / PERMA_CONFIG.SCORE_PER_FAN);
+    saveSystem.addFans(fansEarned);
 
     const centerX = GAME.WIDTH / 2;
 
@@ -64,18 +69,32 @@ export default class ResultScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(centerX, 450, 'スペースキー / クリックでタイトルへ', {
+      .text(
+        centerX,
+        400,
+        `獲得ファン +${fansEarned} 人（所持 ${saveSystem.data.fans} 人）`,
+        {
+          fontFamily: UI_CONFIG.FONT_FAMILY,
+          fontSize: '20px',
+          color: '#ff99cc',
+        },
+      )
+      .setOrigin(0.5);
+
+    this.add
+      .text(centerX, 460, 'スペースキー / クリックで永久強化へ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '20px',
         color: '#aaaacc',
       })
       .setOrigin(0.5);
 
-    this.input.keyboard.once('keydown-SPACE', () => this.backToTitle());
-    this.input.once('pointerdown', () => this.backToTitle());
+    this.input.keyboard.once('keydown-SPACE', () => this.goToUpgrade());
+    this.input.once('pointerdown', () => this.goToUpgrade());
   }
 
-  backToTitle() {
-    this.scene.start('HomeScene');
+  /** RFP のフロー（リザルト → 永久強化 → タイトル）に従って遷移する */
+  goToUpgrade() {
+    this.scene.start('PermanentUpgradeScene');
   }
 }

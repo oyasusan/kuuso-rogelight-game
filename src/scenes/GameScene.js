@@ -12,6 +12,7 @@ import LevelSystem from '../systems/LevelSystem.js';
 import UpgradeSystem from '../systems/UpgradeSystem.js';
 import StageDirector from '../systems/StageDirector.js';
 import audioSystem from '../systems/AudioSystem.js';
+import { buildRunModifiers } from '../systems/RunModifiers.js';
 import HUD from '../ui/HUD.js';
 import UpgradePanel from '../ui/UpgradePanel.js';
 import {
@@ -38,12 +39,21 @@ export default class GameScene extends Phaser.Scene {
   create() {
     this.createTextures();
 
+    // 選択中のキャラクター・ステージ・永久強化から今回のラン設定を組み立てる
+    this.mods = buildRunModifiers();
+    this.cameras.main.setBackgroundColor(this.mods.stage.bgColor);
+
     // --- オブジェクト・システムの初期化 ---
     this.spawnSystem = new SpawnSystem(this);
-    this.audiences = this.spawnSystem.spawnAudiences();
+    this.audiences = this.spawnSystem.spawnAudiences(
+      this.mods.stage,
+      this.mods.audienceInitialHeat,
+    );
     this.antiGroup = this.spawnSystem.antiGroup;
 
     this.player = new Player(this, GAME.WIDTH / 2, GAME.HEIGHT / 2);
+    this.player.setTint(this.mods.character.color);
+    this.player.moveSpeed = this.mods.playerSpeed;
 
     this.heatSystem = new HeatSystem(this.audiences);
     this.levelSystem = new LevelSystem();
@@ -62,6 +72,8 @@ export default class GameScene extends Phaser.Scene {
       this.heatSystem,
     );
     this.mc = new MCPerformance(this, this.player, this.heatSystem);
+    this.song.heatGain = this.mods.songHeatGain;
+    this.song.radius = this.mods.songRadius;
     this.song.start(SONG_CONFIG.INTERVAL_MS);
 
     this.upgradeSystem = new UpgradeSystem({
@@ -117,11 +129,11 @@ export default class GameScene extends Phaser.Scene {
       callback: this.onSecondTick,
       callbackScope: this,
     });
-    // アンチのスポーン（初回は少し遅らせ、以後は一定間隔）
+    // アンチのスポーン（初回は少し遅らせ、以後はステージに応じた間隔）
     this.time.delayedCall(ANTI_CONFIG.FIRST_SPAWN_MS, () => {
       this.spawnAntiWave();
       this.time.addEvent({
-        delay: ANTI_CONFIG.SPAWN_INTERVAL_MS,
+        delay: this.mods.antiSpawnIntervalMs,
         loop: true,
         callback: this.spawnAntiWave,
         callbackScope: this,
@@ -181,7 +193,7 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
     anti.despawn();
-    this.heatSystem.applyHeatToAll(ANTI_CONFIG.HEAT_DRAIN);
+    this.heatSystem.applyHeatToAll(this.mods.antiHeatDrain);
     this.cameras.main.flash(200, 120, 0, 40);
     this.cameras.main.shake(150, 0.008);
     audioSystem.playAntiContact();

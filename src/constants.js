@@ -38,20 +38,8 @@ export const AUDIENCE_CONFIG = {
   INITIAL_HEAT: 20,
   /** Heat の最大値（この値で熱狂状態になる） */
   MAX_HEAT: 100,
-  /** 観客を並べる格子（COLS x ROWS 人生成される） */
-  GRID: {
-    COLS: 16,
-    ROWS: 7,
-    /** 格子位置からのランダムなずらし幅（px） */
-    JITTER: 12,
-  },
-  /** 観客を配置する矩形エリア */
-  AREA: {
-    X: 60,
-    Y: 130,
-    WIDTH: 840,
-    HEIGHT: 360,
-  },
+  /** 格子位置からのランダムなずらし幅（px） */
+  JITTER: 12,
   /** Heat が低いときの色 */
   COLOR_COLD: 0x4a5a9e,
   /** Heat が高いときの色 */
@@ -224,6 +212,111 @@ export const AUDIO_CONFIG = {
   CHEER_GAINS: [0, 0.04, 0.08, 0.13, 0.2],
   /** 熱狂 SE の最短再生間隔（ミリ秒、連鎖時の鳴りすぎ防止） */
   FRENZY_SE_MIN_INTERVAL_MS: 70,
+};
+
+/**
+ * プレイアブルキャラクター。
+ * songHeatMult: 歌の Heat 量倍率 / songRadiusMult: 歌の半径倍率 / speedMult: 移動速度倍率
+ */
+export const CHARACTERS = [
+  {
+    id: 'aika',
+    name: 'アイカ',
+    description: 'バランス型\nクセがなく扱いやすい',
+    color: 0xff66aa,
+    songHeatMult: 1,
+    songRadiusMult: 1,
+    speedMult: 1,
+  },
+  {
+    id: 'mio',
+    name: 'ミオ',
+    description: '歌姫型\n歌のHeat +30%\n移動速度 -10%',
+    color: 0x66aaff,
+    songHeatMult: 1.3,
+    songRadiusMult: 1,
+    speedMult: 0.9,
+  },
+  {
+    id: 'rin',
+    name: 'リン',
+    description: 'スピード型\n移動速度 +25%\n歌の範囲 -15%',
+    color: 0xffaa44,
+    songHeatMult: 1,
+    songRadiusMult: 0.85,
+    speedMult: 1.25,
+  },
+];
+
+/**
+ * ステージ定義。
+ * blocks: 観客を配置する格子エリアの配列（cols x rows 人ずつ生成される）
+ * antiIntervalMult: アンチのスポーン間隔の倍率（小さいほど多い）
+ */
+export const STAGES = [
+  {
+    id: 'hall',
+    name: 'ライブハウス',
+    description: '標準的な会場',
+    bgColor: '#0d0d1f',
+    antiIntervalMult: 1,
+    blocks: [{ x: 60, y: 130, width: 840, height: 360, cols: 16, rows: 7 }],
+  },
+  {
+    id: 'festival',
+    name: '野外フェス',
+    description: '観客が2ブロック\nアンチ出現 +40%',
+    bgColor: '#0c1e14',
+    antiIntervalMult: 0.7,
+    blocks: [
+      { x: 40, y: 130, width: 380, height: 360, cols: 8, rows: 7 },
+      { x: 540, y: 130, width: 380, height: 360, cols: 8, rows: 7 },
+    ],
+  },
+];
+
+/** 永久強化（ラン間で持ち越すメタ進行） */
+export const PERMA_CONFIG = {
+  /** スコアいくつごとにファン 1 人を獲得するか */
+  SCORE_PER_FAN: 100,
+  /**
+   * 永久強化の定義。cost = baseCost × (現在ランク + 1)。
+   * step はランク 1 につき加算される効果量。
+   */
+  UPGRADES: [
+    {
+      id: 'initialHeat',
+      name: 'ファンの期待',
+      description: '観客の初期Heat +5',
+      maxRank: 4,
+      baseCost: 100,
+      step: 5,
+    },
+    {
+      id: 'songHeat',
+      name: 'ボイストレーニング',
+      description: '歌のHeat +4',
+      maxRank: 5,
+      baseCost: 80,
+      step: 4,
+    },
+    {
+      id: 'speed',
+      name: '体力づくり',
+      description: '移動速度 +8%',
+      maxRank: 5,
+      baseCost: 80,
+      step: 0.08,
+    },
+    {
+      id: 'antiResist',
+      name: 'メンタルケア',
+      description: 'アンチによるHeat減少を2緩和',
+      maxRank: 4,
+      baseCost: 120,
+      step: 2,
+    },
+  ],
 };
 
 /** UI 関連 */

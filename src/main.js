@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import HomeScene from './scenes/HomeScene.js';
 import GameScene from './scenes/GameScene.js';
 import ResultScene from './scenes/ResultScene.js';
+import PermanentUpgradeScene from './scenes/PermanentUpgradeScene.js';
 import { GAME } from './constants.js';
 
 /**
@@ -21,7 +22,7 @@ const config = {
   physics: {
     default: 'arcade',
   },
-  scene: [HomeScene, GameScene, ResultScene],
+  scene: [HomeScene, GameScene, ResultScene, PermanentUpgradeScene],
 };
 
 new Phaser.Game(config);

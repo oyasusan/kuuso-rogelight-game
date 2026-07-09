@@ -58,22 +58,27 @@ export default class SpawnSystem {
   }
 
   /**
-   * 観客を格子状（＋ランダムなずらし）に配置して生成する。
+   * ステージ定義の各ブロックへ、観客を格子状（＋ランダムなずらし）に配置して生成する。
+   * @param {typeof import('../constants.js').STAGES[number]} stage
+   * @param {number} initialHeat 観客の初期 Heat
    * @returns {Audience[]}
    */
-  spawnAudiences() {
-    const { GRID, AREA } = AUDIENCE_CONFIG;
-    const stepX = AREA.WIDTH / (GRID.COLS - 1);
-    const stepY = AREA.HEIGHT / (GRID.ROWS - 1);
-
+  spawnAudiences(stage, initialHeat) {
+    const jitter = AUDIENCE_CONFIG.JITTER;
     const audiences = [];
-    for (let row = 0; row < GRID.ROWS; row += 1) {
-      for (let col = 0; col < GRID.COLS; col += 1) {
-        const x =
-          AREA.X + col * stepX + Phaser.Math.Between(-GRID.JITTER, GRID.JITTER);
-        const y =
-          AREA.Y + row * stepY + Phaser.Math.Between(-GRID.JITTER, GRID.JITTER);
-        audiences.push(new Audience(this.scene, x, y));
+
+    for (const block of stage.blocks) {
+      const stepX = block.width / (block.cols - 1);
+      const stepY = block.height / (block.rows - 1);
+
+      for (let row = 0; row < block.rows; row += 1) {
+        for (let col = 0; col < block.cols; col += 1) {
+          const x =
+            block.x + col * stepX + Phaser.Math.Between(-jitter, jitter);
+          const y =
+            block.y + row * stepY + Phaser.Math.Between(-jitter, jitter);
+          audiences.push(new Audience(this.scene, x, y, initialHeat));
+        }
       }
     }
     return audiences;
