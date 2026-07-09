@@ -170,13 +170,17 @@ export default class GameScene extends Phaser.Scene {
     graphics.destroy();
   }
 
-  update() {
+  update(time) {
     if (this.isLiveFinished || this.isPaused) {
       return;
     }
     this.player.update();
     for (const anti of this.antiGroup.getMatching('active', true)) {
       anti.chase(this.player);
+    }
+    // 観客は Heat に応じて揺れ、熱狂するとジャンプする
+    for (const audience of this.audiences) {
+      audience.updateMotion(time);
     }
   }
 

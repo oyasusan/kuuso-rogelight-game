@@ -31,7 +31,39 @@ export default class Audience extends Phaser.GameObjects.Image {
     /** 熱狂状態かどうか */
     this.isFrenzied = false;
 
+    /** モーションの基準位置（揺れ・ジャンプはここからのオフセット） */
+    this.baseX = x;
+    this.baseY = y;
+    /** 個体ごとに揺れのタイミングをずらす位相 */
+    this.motionPhase = Math.random() * Math.PI * 2;
+
     this.updateAppearance();
+  }
+
+  /**
+   * Heat に応じたモーション。毎フレーム呼ぶ。
+   * 冷めているとほぼ静止、温まると揺れが大きく速くなり、熱狂するとジャンプする。
+   * @param {number} timeMs シーンの経過時間（ミリ秒）
+   */
+  updateMotion(timeMs) {
+    const { MOTION, MAX_HEAT } = AUDIENCE_CONFIG;
+
+    if (this.isFrenzied) {
+      const jump = Math.abs(Math.sin(timeMs * MOTION.JUMP_FREQ + this.motionPhase));
+      this.y = this.baseY - jump * MOTION.JUMP_HEIGHT;
+      this.x = this.baseX;
+      return;
+    }
+
+    const intensity = this.heat / MAX_HEAT; // 0〜1
+    const swayFreq = MOTION.SWAY_BASE_FREQ + intensity * MOTION.SWAY_HEAT_FREQ;
+    const swayAmp = MOTION.SWAY_BASE_AMP + intensity * MOTION.SWAY_HEAT_AMP;
+    this.y = this.baseY + Math.sin(timeMs * swayFreq + this.motionPhase) * swayAmp;
+    this.x =
+      this.baseX +
+      Math.sin(timeMs * MOTION.SWAY_BASE_FREQ * 0.7 + this.motionPhase) *
+        intensity *
+        2;
   }
 
   /** 熱狂状態へ移行する。演出として一度だけ弾むアニメーションを行う */

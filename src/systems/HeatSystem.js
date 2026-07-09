@@ -134,10 +134,18 @@ export default class HeatSystem extends Phaser.Events.EventEmitter {
   }
 
   /**
-   * 熱狂の連鎖処理。1 秒に 1 回呼ぶこと。
-   * 熱狂状態の観客が周囲 CHAIN_RADIUS px 以内の観客へ Heat を与える。
+   * 熱狂の連鎖と自然減衰の処理。1 秒に 1 回呼ぶこと。
+   * - 熱狂していない観客は毎秒冷めていく（盛り上げ続けないと維持できない）
+   * - 熱狂状態の観客は周囲 CHAIN_RADIUS px 以内の観客へ Heat を与える
    */
   chainTick() {
+    // 自然減衰（熱狂した観客は冷めない）
+    for (const audience of this.audiences) {
+      if (!audience.isFrenzied && audience.heat > 0) {
+        this.applyHeat(audience, -AUDIENCE_CONFIG.HEAT_DECAY_PER_SEC);
+      }
+    }
+
     // 処理中に新たな熱狂が発生しても同一 tick では伝播させない
     const sources = [...this.frenziedAudiences];
     for (const source of sources) {

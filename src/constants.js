@@ -38,8 +38,30 @@ export const AUDIENCE_CONFIG = {
   INITIAL_HEAT: 20,
   /** Heat の最大値（この値で熱狂状態になる） */
   MAX_HEAT: 100,
+  /**
+   * Heat の自然減衰（毎秒）。
+   * 盛り上げ続けないと観客は冷めていく＝アイドルが頑張って維持する手触りの核。
+   * 連鎖(3)と同値のため、熱狂者 1 人に接するだけでは現状維持で、
+   * 2 人以上に囲われるか、パフォーマンスの後押しがないと熱狂は広がらない
+   */
+  HEAT_DECAY_PER_SEC: 3,
   /** 格子位置からのランダムなずらし幅（px） */
   JITTER: 12,
+  /** 観客のモーション（Heat が高いほど大きく揺れ、熱狂するとジャンプする） */
+  MOTION: {
+    /** 熱狂時のジャンプの高さ（px） */
+    JUMP_HEIGHT: 7,
+    /** 熱狂時のジャンプの速さ */
+    JUMP_FREQ: 0.008,
+    /** 揺れの基本速度 */
+    SWAY_BASE_FREQ: 0.002,
+    /** Heat による揺れ速度の加算 */
+    SWAY_HEAT_FREQ: 0.004,
+    /** 揺れの基本振幅（px） */
+    SWAY_BASE_AMP: 0.5,
+    /** Heat による揺れ振幅の加算（px） */
+    SWAY_HEAT_AMP: 2.5,
+  },
   /** Heat が低いときの色 */
   COLOR_COLD: 0x4a5a9e,
   /** Heat が高いときの色 */
@@ -52,8 +74,8 @@ export const AUDIENCE_CONFIG = {
 export const FRENZY_CONFIG = {
   /** 周囲の観客へ熱を伝える半径（px） */
   CHAIN_RADIUS: 100,
-  /** 毎秒与える Heat 量 */
-  CHAIN_HEAT_PER_SEC: 5,
+  /** 毎秒与える Heat 量（自然減衰と相殺されるため、実効はもっと小さい） */
+  CHAIN_HEAT_PER_SEC: 3,
   /** 観客 1 人が熱狂したときに得る経験値 */
   EXP_PER_FRENZY: 10,
 };
@@ -65,7 +87,7 @@ export const SONG_CONFIG = {
   /** 効果半径（px） */
   RADIUS: 120,
   /** 観客へ与える Heat 量 */
-  HEAT_GAIN: 20,
+  HEAT_GAIN: 12,
   /** アンチへ与えるダメージ（Phase2 で使用） */
   DAMAGE: 1,
   /** 音符エフェクトのプール上限 */
@@ -132,7 +154,7 @@ export const UPGRADE_CONFIG = {
   /** 提示する選択肢の数 */
   CHOICES: 3,
   /** 歌強化 1 回あたりの Heat 量増加 */
-  SONG_HEAT_BONUS: 8,
+  SONG_HEAT_BONUS: 6,
   /** 歌強化 1 回あたりのダメージ増加 */
   SONG_DAMAGE_BONUS: 1,
   /** ダンス強化 1 回あたりの Heat 量増加 */
@@ -151,12 +173,14 @@ export const UPGRADE_CONFIG = {
 export const LEVEL_CONFIG = {
   /**
    * レベル 1 → 2 に必要な経験値。
-   * 観客は 112 人 × 10 EXP = 総量 1120 EXP。1 プレイでのレベルアップ回数が
-   * 3〜4 回（4 回目はほぼ全員熱狂が条件）になるよう調整している
+   * 観客は 112 人 × 10 EXP = 総量 1120 EXP。
+   * ラン全体で緩やかにレベルが上がり、ほぼ全員熱狂（1094 EXP）で
+   * ゲーム終盤に Lv6（実質最大）へ届くカーブにしている:
+   * Lv2=100 / Lv3=240 / Lv4=436 / Lv5=710 / Lv6=1094（累計）
    */
-  BASE_EXP: 120,
+  BASE_EXP: 100,
   /** レベルが上がるごとの必要経験値の倍率 */
-  EXP_GROWTH: 1.6,
+  EXP_GROWTH: 1.4,
 };
 
 /** コンボ関連（連続して観客を熱狂させると加算） */
