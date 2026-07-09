@@ -113,6 +113,15 @@ export default class StageDirector {
   updateSylium() {
     const visible = this.tier >= 2;
 
+    // アンチの妨害で熱狂が解除された観客のサイリウムは片付ける
+    // （熱狂状態は解除後トグルされうるため、都度チェックが必要）
+    for (const [audience, sylium] of this.syliumByAudience) {
+      if (!audience.isFrenzied) {
+        sylium.destroy();
+        this.syliumByAudience.delete(audience);
+      }
+    }
+
     if (visible) {
       let count = this.syliumByAudience.size;
       for (const audience of this.audiences) {

@@ -148,14 +148,57 @@ export default class HeatSystem extends Phaser.Events.EventEmitter {
 
     // 処理中に新たな熱狂が発生しても同一 tick では伝播させない
     const sources = [...this.frenziedAudiences];
-    for (const source of sources) {
-      this.applyHeatInRadius(
-        source.x,
-        source.y,
-        FRENZY_CONFIG.CHAIN_RADIUS,
-        FRENZY_CONFIG.CHAIN_HEAT_PER_SEC,
-      );
+    if (sources.length === 0) {
+      return;
     }
+
+    // 熱狂の連鎖。周囲に熱狂源が何人いても、対象 1 人が受け取る上昇量は
+    // CHAIN_HEAT_PER_SEC 1 回分に留める（単純合算だと熱狂密度が上がるほど
+    // 雪だるま式に加速してしまうため、対象ごとに上限を設けている）
+    const radiusSq = FRENZY_CONFIG.CHAIN_RADIUS * FRENZY_CONFIG.CHAIN_RADIUS;
+    for (const audience of this.audiences) {
+      if (audience.isFrenzied) {
+        continue;
+      }
+      const isNearSource = sources.some(
+        (source) =>
+          Phaser.Math.Distance.BetweenPointsSquared(source, audience) <=
+          radiusSq,
+      );
+      if (isNearSource) {
+        this.applyHeat(audience, FRENZY_CONFIG.CHAIN_HEAT_PER_SEC);
+      }
+    }
+  }
+
+  /**
+   * 熱狂状態の観客をランダムに選んで熱狂を解除する（クールダウンさせる）。
+   * アンチのプレイヤー接触時のペナルティとして使う。
+   * @param {number} ratio 熱狂している観客のうち解除する割合（0〜1）
+   * @param {number} minCount ratio による人数が少なくても最低これだけ解除する
+   * @param {number} heatAfter 解除後の Heat
+   * @returns {number} 実際に解除した人数
+   */
+  cooldownRandomFrenzy(ratio, minCount, heatAfter) {
+    if (this.frenziedAudiences.length === 0) {
+      return 0;
+    }
+    const count = Math.min(
+      this.frenziedAudiences.length,
+      Math.max(minCount, Math.round(this.frenziedAudiences.length * ratio)),
+    );
+    const targets = Phaser.Utils.Array.Shuffle([
+      ...this.frenziedAudiences,
+    ]).slice(0, count);
+
+    for (const audience of targets) {
+      audience.exitFrenzy(heatAfter);
+      const index = this.frenziedAudiences.indexOf(audience);
+      if (index !== -1) {
+        this.frenziedAudiences.splice(index, 1);
+      }
+    }
+    return targets.length;
   }
 
   /** 会場全体の Heat を減らす。アンチの妨害（Phase2）で使用する */

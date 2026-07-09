@@ -25,6 +25,7 @@ import {
   PLAYER_CONFIG,
   SCORE_CONFIG,
   SONG_CONFIG,
+  UI_CONFIG,
 } from '../constants.js';
 
 /**
@@ -198,10 +199,48 @@ export default class GameScene extends Phaser.Scene {
     }
     anti.despawn();
     this.heatSystem.applyHeatToAll(this.mods.antiHeatDrain);
+    // 熱狂済みの観客も一部クールダウンさせる（積み上げた盛り上がりにも及ぶ罰則）
+    const cooledCount = this.heatSystem.cooldownRandomFrenzy(
+      ANTI_CONFIG.FRENZY_COOLDOWN_RATIO,
+      ANTI_CONFIG.FRENZY_COOLDOWN_MIN_COUNT,
+      ANTI_CONFIG.FRENZY_COOLDOWN_HEAT,
+    );
+
     this.cameras.main.flash(200, 120, 0, 40);
     this.cameras.main.shake(150, 0.008);
     audioSystem.playAntiContact();
+    if (cooledCount > 0) {
+      this.showFloatingText(
+        this.player.x,
+        this.player.y - 40,
+        `熱狂 ${cooledCount} 人が冷めた…`,
+        '#ff6666',
+      );
+    }
     this.updateHud();
+  }
+
+  /** プレイヤー付近に短く浮かんで消えるテキストを表示する（演出用の汎用ヘルパー） */
+  showFloatingText(x, y, message, color) {
+    const text = this.add
+      .text(x, y, message, {
+        fontFamily: UI_CONFIG.FONT_FAMILY,
+        fontSize: '16px',
+        color,
+        stroke: '#000000',
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.UI);
+
+    this.tweens.add({
+      targets: text,
+      y: text.y - 24,
+      alpha: 0,
+      duration: 900,
+      ease: 'Quad.easeOut',
+      onComplete: () => text.destroy(),
+    });
   }
 
   /** 1 秒ごとの進行処理 */

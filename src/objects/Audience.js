@@ -85,6 +85,29 @@ export default class Audience extends Phaser.GameObjects.Image {
     });
   }
 
+  /**
+   * 熱狂状態を解除する。アンチのプレイヤー接触時のペナルティとして使う。
+   * 解除後は再び温め直さないと熱狂に戻らない。
+   * @param {number} newHeat 解除後の Heat
+   */
+  exitFrenzy(newHeat) {
+    if (!this.isFrenzied) {
+      return;
+    }
+    this.isFrenzied = false;
+    this.mood = MOOD.NORMAL;
+    this.heat = Phaser.Math.Clamp(newHeat, 0, AUDIENCE_CONFIG.MAX_HEAT);
+    this.updateAppearance();
+
+    this.scene.tweens.add({
+      targets: this,
+      scale: 0.7,
+      duration: 150,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+    });
+  }
+
   /** Heat に応じて色を更新する */
   updateAppearance() {
     if (this.isFrenzied) {
