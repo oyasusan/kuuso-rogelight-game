@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import Audience from '../objects/Audience.js';
 import AntiFan from '../objects/AntiFan.js';
-import { ANTI_CONFIG, AUDIENCE_CONFIG, GAME } from '../constants.js';
+import { ANTI_CONFIG, AUDIENCE_CONFIG } from '../constants.js';
 
 /**
  * オブジェクトの生成を担当するシステム。
@@ -35,24 +35,29 @@ export default class SpawnSystem {
     }
   }
 
-  /** 画面の四辺いずれかの外側の座標をランダムに返す */
+  /**
+   * 現在カメラに映っている範囲の四辺いずれかの外側の座標をランダムに返す。
+   * ワールド全体ではなく「今プレイヤーに見えている範囲」基準にすることで、
+   * 会場が広くなってもアンチがプレイヤーへ近づくまでの距離感を一定に保つ
+   */
   randomOffscreenPosition() {
     const margin = ANTI_CONFIG.SPAWN_MARGIN;
+    const view = this.scene.cameras.main.worldView;
     const side = Phaser.Math.Between(0, 3);
     switch (side) {
       case 0: // 上
-        return { x: Phaser.Math.Between(0, GAME.WIDTH), y: -margin };
+        return { x: Phaser.Math.Between(view.left, view.right), y: view.top - margin };
       case 1: // 下
         return {
-          x: Phaser.Math.Between(0, GAME.WIDTH),
-          y: GAME.HEIGHT + margin,
+          x: Phaser.Math.Between(view.left, view.right),
+          y: view.bottom + margin,
         };
       case 2: // 左
-        return { x: -margin, y: Phaser.Math.Between(0, GAME.HEIGHT) };
+        return { x: view.left - margin, y: Phaser.Math.Between(view.top, view.bottom) };
       default: // 右
         return {
-          x: GAME.WIDTH + margin,
-          y: Phaser.Math.Between(0, GAME.HEIGHT),
+          x: view.right + margin,
+          y: Phaser.Math.Between(view.top, view.bottom),
         };
     }
   }

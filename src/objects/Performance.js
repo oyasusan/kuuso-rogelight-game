@@ -282,6 +282,7 @@ export class MCPerformance extends Performance {
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.UI)
+      .setScrollFactor(0)
       .setVisible(false);
   }
 

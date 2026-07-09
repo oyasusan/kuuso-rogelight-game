@@ -16,6 +16,8 @@ const config = {
   width: GAME.WIDTH,
   height: GAME.HEIGHT,
   backgroundColor: GAME.BACKGROUND_COLOR,
+  // ドット絵をにじませない（カメラがスクロールする会場でも輪郭をくっきり保つ）
+  pixelArt: true,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

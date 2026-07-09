@@ -388,7 +388,15 @@ export const CHARACTERS = [
  * ステージ（会場）定義。小箱 → ドームの順に規模が大きくなり、それに伴って
  * 観客数（＝獲得できる経験値・ファンの総量）とアンチの脅威が同時に増していく。
  *
- * blocks: 観客を配置する格子エリアの配列（cols x rows 人ずつ生成される）
+ * worldWidth/worldHeight: ワールド（マップ）の実サイズ。GAME.WIDTH/HEIGHT
+ *   （画面表示サイズ）より大きい場合はカメラがプレイヤーを追従してスクロールする。
+ *   小箱だけは画面サイズと同じでスクロールしない
+ * blocks: 観客を配置する格子エリアの配列（cols x rows 人ずつ生成される）。
+ *   会場が大きくなっても観客の間隔（密度）はほぼ一定（56px）に保っている。
+ *   密度を上げてしまうと歌・ダンスの範囲攻撃 1 回で当たる人数が跳ね上がり、
+ *   経験値が過剰に稼げてしまう＝難易度が下がる問題があったため、
+ *   「範囲は同じ密度のまま広がる」形にして、広い会場を歩き回って稼ぐ必要がある
+ *   ようにしている
  * antiIntervalMult: アンチのスポーン間隔の倍率（小さいほど頻繁）
  * antiWaveMult: 1 回のスポーンで出現する数の倍率（＝アンチの「ウェーブ化」）
  * heatDecayMult: 観客の自然冷却速度の倍率（大きいほど Heat が鈍化しやすい）
@@ -402,6 +410,8 @@ export const STAGES = [
     name: '小箱',
     description: '標準的な会場\n観客 約112人',
     bgColor: '#0d0d1f',
+    worldWidth: GAME.WIDTH,
+    worldHeight: GAME.HEIGHT,
     antiIntervalMult: 1,
     antiWaveMult: 1,
     heatDecayMult: 1,
@@ -412,50 +422,58 @@ export const STAGES = [
   {
     id: 'medium',
     name: '中箱',
-    description: '観客 約2倍(220人)\nアンチ増加・Heat鈍化',
+    description: '観客 約2倍(220人)\nマップ拡大・アンチ増加・Heat鈍化',
     bgColor: '#101229',
+    worldWidth: 1400,
+    worldHeight: 900,
     antiIntervalMult: 0.85,
     antiWaveMult: 1.4,
     heatDecayMult: 1.15,
     unlocked: false,
     unlockUpgradeId: 'unlockMedium',
-    blocks: [{ x: 60, y: 110, width: 840, height: 400, cols: 20, rows: 11 }],
+    blocks: [{ x: 168, y: 170, width: 1064, height: 560, cols: 20, rows: 11 }],
   },
   {
     id: 'large',
     name: '大箱',
-    description: '観客 約4倍(442人)\nアンチ強襲・Heat大幅鈍化',
+    description: '観客 約4倍(442人)\nマップ拡大・アンチ強襲・Heat大幅鈍化',
     bgColor: '#141026',
+    worldWidth: 1700,
+    worldHeight: 1200,
     antiIntervalMult: 0.7,
     antiWaveMult: 1.8,
     heatDecayMult: 1.3,
     unlocked: false,
     unlockUpgradeId: 'unlockLarge',
-    blocks: [{ x: 60, y: 95, width: 840, height: 420, cols: 26, rows: 17 }],
+    blocks: [{ x: 150, y: 152, width: 1400, height: 896, cols: 26, rows: 17 }],
   },
   {
     id: 'arena',
     name: 'アリーナ',
-    description: '観客 約6倍(672人)\nアンチ猛攻・Heat鈍化(特大)',
+    description: '観客 約6倍(672人)\nマップ大拡大・アンチ猛攻・Heat鈍化(特大)',
     bgColor: '#160e22',
+    worldWidth: 2050,
+    worldHeight: 1450,
     antiIntervalMult: 0.55,
     antiWaveMult: 2.4,
     heatDecayMult: 1.45,
     unlocked: false,
     unlockUpgradeId: 'unlockArena',
-    blocks: [{ x: 40, y: 85, width: 880, height: 430, cols: 32, rows: 21 }],
+    blocks: [{ x: 157, y: 165, width: 1736, height: 1120, cols: 32, rows: 21 }],
   },
   {
     id: 'dome',
     name: 'ドーム',
-    description: '観客 約8倍(912人)\n最大規模・全難易度MAX',
+    description: '観客 約8倍(912人)\n最大規模のマップ・全難易度MAX',
     bgColor: '#180c1e',
+    worldWidth: 2400,
+    worldHeight: 1600,
     antiIntervalMult: 0.45,
     antiWaveMult: 3.2,
     heatDecayMult: 1.6,
     unlocked: false,
     unlockUpgradeId: 'unlockDome',
-    blocks: [{ x: 40, y: 75, width: 880, height: 445, cols: 38, rows: 24 }],
+    blocks: [{ x: 164, y: 156, width: 2072, height: 1288, cols: 38, rows: 24 }],
   },
 ];
 

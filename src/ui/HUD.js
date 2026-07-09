@@ -9,11 +9,12 @@ export default class HUD {
   constructor(scene) {
     this.scene = scene;
 
-    // 背景バー
+    // 背景バー（ワールドがスクロールしても画面に固定表示する）
     scene.add
       .rectangle(0, 0, GAME.WIDTH, UI_CONFIG.HUD_HEIGHT, 0x000000, 0.55)
       .setOrigin(0)
-      .setDepth(DEPTH.UI);
+      .setDepth(DEPTH.UI)
+      .setScrollFactor(0);
 
     const style = {
       fontFamily: UI_CONFIG.FONT_FAMILY,
@@ -36,7 +37,8 @@ export default class HUD {
         color: UI_CONFIG.ACCENT_COLOR,
       })
       .setOrigin(1, 0)
-      .setDepth(DEPTH.UI);
+      .setDepth(DEPTH.UI)
+      .setScrollFactor(0);
 
     // 取得済みスキルは画面左下に表示
     this.skillsText = scene.add
@@ -46,7 +48,8 @@ export default class HUD {
         color: '#ccccee',
       })
       .setOrigin(0, 1)
-      .setDepth(DEPTH.UI);
+      .setDepth(DEPTH.UI)
+      .setScrollFactor(0);
   }
 
   /** スキル取得状況の表示を更新する（アップグレード選択時に呼ぶ） */
@@ -59,7 +62,8 @@ export default class HUD {
     return this.scene.add
       .text(x, y, '', style)
       .setOrigin(0.5)
-      .setDepth(DEPTH.UI);
+      .setDepth(DEPTH.UI)
+      .setScrollFactor(0);
   }
 
   /**

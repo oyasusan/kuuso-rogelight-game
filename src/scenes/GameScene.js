@@ -46,6 +46,13 @@ export default class GameScene extends Phaser.Scene {
     this.mods = buildRunModifiers();
     this.cameras.main.setBackgroundColor(this.mods.stage.bgColor);
 
+    // ステージ規模に応じたワールドサイズを設定する。小箱は画面サイズと同じ
+    // （＝スクロールしない）が、それより大きい会場ではカメラがプレイヤーに
+    // 追従してスクロールする
+    const { worldWidth, worldHeight } = this.mods.stage;
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
     this.createTextures();
 
     // --- オブジェクト・システムの初期化 ---
@@ -58,11 +65,12 @@ export default class GameScene extends Phaser.Scene {
 
     this.player = new Player(
       this,
-      GAME.WIDTH / 2,
-      GAME.HEIGHT / 2,
+      worldWidth / 2,
+      worldHeight / 2,
       `idol-${this.mods.character.id}`,
     );
     this.player.moveSpeed = this.mods.playerSpeed;
+    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
     this.heatSystem = new HeatSystem(
       this.audiences,

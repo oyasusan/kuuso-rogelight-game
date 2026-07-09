@@ -37,11 +37,12 @@ export default class UpgradePanel {
     const centerX = GAME.WIDTH / 2;
     const centerY = GAME.HEIGHT / 2;
 
-    // 背景を暗くする
+    // 背景を暗くする（ワールドがスクロールしても画面に固定表示する）
     const overlay = this.scene.add
       .rectangle(0, 0, GAME.WIDTH, GAME.HEIGHT, 0x000000, 0.65)
       .setOrigin(0)
-      .setDepth(DEPTH.OVERLAY);
+      .setDepth(DEPTH.OVERLAY)
+      .setScrollFactor(0);
     this.objects.push(overlay);
 
     const title = this.scene.add
@@ -52,7 +53,8 @@ export default class UpgradePanel {
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
-      .setDepth(DEPTH.OVERLAY);
+      .setDepth(DEPTH.OVERLAY)
+      .setScrollFactor(0);
     this.objects.push(title);
 
     const totalWidth =
@@ -83,6 +85,7 @@ export default class UpgradePanel {
       .rectangle(x, y, CARD.WIDTH, CARD.HEIGHT, CARD.COLOR)
       .setStrokeStyle(2, CARD.BORDER_COLOR)
       .setDepth(DEPTH.OVERLAY)
+      .setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
 
     card.on('pointerover', () => card.setFillStyle(CARD.COLOR_HOVER));
@@ -96,7 +99,8 @@ export default class UpgradePanel {
         color: '#8888aa',
       })
       .setOrigin(0.5)
-      .setDepth(DEPTH.OVERLAY);
+      .setDepth(DEPTH.OVERLAY)
+      .setScrollFactor(0);
 
     const label = this.scene.add
       .text(x, y - 25, choice.label, {
@@ -108,7 +112,8 @@ export default class UpgradePanel {
         wordWrap: { width: CARD.WIDTH - 30 },
       })
       .setOrigin(0.5)
-      .setDepth(DEPTH.OVERLAY);
+      .setDepth(DEPTH.OVERLAY)
+      .setScrollFactor(0);
 
     const description = this.scene.add
       .text(x, y + 45, choice.description, {
@@ -120,7 +125,8 @@ export default class UpgradePanel {
         wordWrap: { width: CARD.WIDTH - 30 },
       })
       .setOrigin(0.5)
-      .setDepth(DEPTH.OVERLAY);
+      .setDepth(DEPTH.OVERLAY)
+      .setScrollFactor(0);
 
     this.objects.push(card, keyHint, label, description);
   }

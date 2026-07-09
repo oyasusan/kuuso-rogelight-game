@@ -93,7 +93,8 @@ export default class StageDirector {
         strokeThickness: 4,
       })
       .setOrigin(0.5)
-      .setDepth(DEPTH.UI);
+      .setDepth(DEPTH.UI)
+      .setScrollFactor(0);
 
     this.scene.tweens.add({
       targets: text,
@@ -184,7 +185,8 @@ export default class StageDirector {
           frequency: STAGE_CONFIG.CONFETTI_INTERVAL_MS,
           tint: STAGE_CONFIG.CONFETTI_COLORS,
         })
-        .setDepth(DEPTH.EFFECT);
+        .setDepth(DEPTH.EFFECT)
+        .setScrollFactor(0);
     }
 
     if (this.confetti) {
@@ -213,6 +215,7 @@ export default class StageDirector {
           .setOrigin(0.5, 0)
           .setBlendMode(Phaser.BlendModes.ADD)
           .setDepth(DEPTH.EFFECT)
+          .setScrollFactor(0)
           .setAngle(-35);
 
         this.scene.tweens.add({
