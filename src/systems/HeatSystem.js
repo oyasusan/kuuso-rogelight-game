@@ -14,10 +14,13 @@ import { AUDIENCE_CONFIG, FRENZY_CONFIG } from '../constants.js';
 export default class HeatSystem extends Phaser.Events.EventEmitter {
   /**
    * @param {import('../objects/Audience.js').default[]} audiences
+   * @param {number} [heatDecayPerSec] 観客の自然冷却速度（毎秒）。ステージ規模や
+   *   永久強化で変わるため、GameScene から RunModifiers の値を渡す
    */
-  constructor(audiences) {
+  constructor(audiences, heatDecayPerSec = AUDIENCE_CONFIG.HEAT_DECAY_PER_SEC) {
     super();
     this.audiences = audiences;
+    this.heatDecayPerSec = heatDecayPerSec;
 
     /** Heat 上昇量の倍率。MC（Phase2）で 1.5 になる */
     this.heatMultiplier = 1;
@@ -142,7 +145,7 @@ export default class HeatSystem extends Phaser.Events.EventEmitter {
     // 自然減衰（熱狂した観客は冷めない）
     for (const audience of this.audiences) {
       if (!audience.isFrenzied && audience.heat > 0) {
-        this.applyHeat(audience, -AUDIENCE_CONFIG.HEAT_DECAY_PER_SEC);
+        this.applyHeat(audience, -this.heatDecayPerSec);
       }
     }
 

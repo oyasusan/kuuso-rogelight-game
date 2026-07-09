@@ -195,8 +195,12 @@ export const ANTI_CONFIG = {
   SPAWN_INTERVAL_MS: 8000,
   /** この秒数が経過するごとに 1 回のスポーン数が 1 体増える */
   RAMP_EVERY_SEC: 40,
-  /** オブジェクトプールの上限 */
-  POOL_SIZE: 12,
+  /**
+   * オブジェクトプールの上限。
+   * ドーム級の会場では antiWaveMult により 1 波あたりの出現数が大きく増えるため、
+   * 小箱基準の値より余裕を持たせている
+   */
+  POOL_SIZE: 48,
   /** 画面外スポーン時の画面端からの距離（px） */
   SPAWN_MARGIN: 30,
 };
@@ -295,6 +299,10 @@ export const AUDIO_CONFIG = {
  * songHeatMult: 歌の Heat 量倍率 / songRadiusMult: 歌の半径倍率 / speedMult: 移動速度倍率
  * どのキャラクターも「2 種類を強化する代わりに 1 種類を犠牲にする」形の
  * トレードオフで構成し、一方的に強い／弱いキャラクターが生まれないようにしている。
+ *
+ * unlocked: false のキャラクターは最初は選択できず、PERMA_CONFIG.UPGRADES の
+ * unlockUpgradeId で指定した永久強化を購入すると解放される
+ * （判定は RunModifiers.isCharacterUnlocked を使う）。
  */
 export const CHARACTERS = [
   {
@@ -305,6 +313,8 @@ export const CHARACTERS = [
     songHeatMult: 1.35,
     songRadiusMult: 1,
     speedMult: 0.9,
+    unlocked: true,
+    unlockUpgradeId: null,
   },
   {
     id: 'ami',
@@ -314,6 +324,8 @@ export const CHARACTERS = [
     songHeatMult: 1,
     songRadiusMult: 1,
     speedMult: 1,
+    unlocked: true,
+    unlockUpgradeId: null,
   },
   {
     id: 'yui',
@@ -323,6 +335,8 @@ export const CHARACTERS = [
     songHeatMult: 1,
     songRadiusMult: 0.85,
     speedMult: 1.25,
+    unlocked: true,
+    unlockUpgradeId: null,
   },
   {
     id: 'uyu',
@@ -332,6 +346,8 @@ export const CHARACTERS = [
     songHeatMult: 0.85,
     songRadiusMult: 1.3,
     speedMult: 1,
+    unlocked: false,
+    unlockUpgradeId: 'unlockUyu',
   },
   {
     id: 'mirei',
@@ -341,6 +357,8 @@ export const CHARACTERS = [
     songHeatMult: 0.8,
     songRadiusMult: 1.15,
     speedMult: 1.15,
+    unlocked: false,
+    unlockUpgradeId: 'unlockMirei',
   },
   {
     id: 'kotone',
@@ -350,6 +368,8 @@ export const CHARACTERS = [
     songHeatMult: 1.2,
     songRadiusMult: 1.15,
     speedMult: 0.8,
+    unlocked: false,
+    unlockUpgradeId: 'unlockKotone',
   },
   {
     id: 'mayupi',
@@ -359,33 +379,83 @@ export const CHARACTERS = [
     songHeatMult: 1.15,
     songRadiusMult: 0.8,
     speedMult: 1.15,
+    unlocked: false,
+    unlockUpgradeId: 'unlockMayupi',
   },
 ];
 
 /**
- * ステージ定義。
+ * ステージ（会場）定義。小箱 → ドームの順に規模が大きくなり、それに伴って
+ * 観客数（＝獲得できる経験値・ファンの総量）とアンチの脅威が同時に増していく。
+ *
  * blocks: 観客を配置する格子エリアの配列（cols x rows 人ずつ生成される）
- * antiIntervalMult: アンチのスポーン間隔の倍率（小さいほど多い）
+ * antiIntervalMult: アンチのスポーン間隔の倍率（小さいほど頻繁）
+ * antiWaveMult: 1 回のスポーンで出現する数の倍率（＝アンチの「ウェーブ化」）
+ * heatDecayMult: 観客の自然冷却速度の倍率（大きいほど Heat が鈍化しやすい）
+ * unlocked: false のステージは最初は選択できず、PERMA_CONFIG.UPGRADES の
+ * unlockUpgradeId で指定した永久強化を購入すると解放される
+ * （判定は RunModifiers.isStageUnlocked を使う）。
  */
 export const STAGES = [
   {
-    id: 'hall',
-    name: 'ライブハウス',
-    description: '標準的な会場',
+    id: 'small',
+    name: '小箱',
+    description: '標準的な会場\n観客 約112人',
     bgColor: '#0d0d1f',
     antiIntervalMult: 1,
+    antiWaveMult: 1,
+    heatDecayMult: 1,
+    unlocked: true,
+    unlockUpgradeId: null,
     blocks: [{ x: 60, y: 130, width: 840, height: 360, cols: 16, rows: 7 }],
   },
   {
-    id: 'festival',
-    name: '野外フェス',
-    description: '観客が2ブロック\nアンチ出現 +40%',
-    bgColor: '#0c1e14',
+    id: 'medium',
+    name: '中箱',
+    description: '観客 約2倍(220人)\nアンチ増加・Heat鈍化',
+    bgColor: '#101229',
+    antiIntervalMult: 0.85,
+    antiWaveMult: 1.4,
+    heatDecayMult: 1.15,
+    unlocked: false,
+    unlockUpgradeId: 'unlockMedium',
+    blocks: [{ x: 60, y: 110, width: 840, height: 400, cols: 20, rows: 11 }],
+  },
+  {
+    id: 'large',
+    name: '大箱',
+    description: '観客 約4倍(442人)\nアンチ強襲・Heat大幅鈍化',
+    bgColor: '#141026',
     antiIntervalMult: 0.7,
-    blocks: [
-      { x: 40, y: 130, width: 380, height: 360, cols: 8, rows: 7 },
-      { x: 540, y: 130, width: 380, height: 360, cols: 8, rows: 7 },
-    ],
+    antiWaveMult: 1.8,
+    heatDecayMult: 1.3,
+    unlocked: false,
+    unlockUpgradeId: 'unlockLarge',
+    blocks: [{ x: 60, y: 95, width: 840, height: 420, cols: 26, rows: 17 }],
+  },
+  {
+    id: 'arena',
+    name: 'アリーナ',
+    description: '観客 約6倍(672人)\nアンチ猛攻・Heat鈍化(特大)',
+    bgColor: '#160e22',
+    antiIntervalMult: 0.55,
+    antiWaveMult: 2.4,
+    heatDecayMult: 1.45,
+    unlocked: false,
+    unlockUpgradeId: 'unlockArena',
+    blocks: [{ x: 40, y: 85, width: 880, height: 430, cols: 32, rows: 21 }],
+  },
+  {
+    id: 'dome',
+    name: 'ドーム',
+    description: '観客 約8倍(912人)\n最大規模・全難易度MAX',
+    bgColor: '#180c1e',
+    antiIntervalMult: 0.45,
+    antiWaveMult: 3.2,
+    heatDecayMult: 1.6,
+    unlocked: false,
+    unlockUpgradeId: 'unlockDome',
+    blocks: [{ x: 40, y: 75, width: 880, height: 445, cols: 38, rows: 24 }],
   },
 ];
 
@@ -395,40 +465,147 @@ export const PERMA_CONFIG = {
   SCORE_PER_FAN: 100,
   /**
    * 永久強化の定義。cost = baseCost × (現在ランク + 1)。
-   * step はランク 1 につき加算される効果量。
+   * step はランク 1 につき加算される効果量（category: 'character' / 'stage' の
+   * 解放系は maxRank: 1 の 1 回購入で、cost は常に baseCost になる）。
+   * category は PermanentUpgradeScene のタブ分けに使う。
    */
   UPGRADES: [
+    // --- ステータス強化（購入するたびに効果が積み重なる） ---
     {
       id: 'initialHeat',
+      category: 'stat',
       name: 'ファンの期待',
       description: '観客の初期Heat +5',
-      maxRank: 4,
+      maxRank: 6,
       baseCost: 100,
       step: 5,
     },
     {
       id: 'songHeat',
+      category: 'stat',
       name: 'ボイストレーニング',
       description: '歌のHeat +4',
-      maxRank: 5,
+      maxRank: 8,
       baseCost: 80,
       step: 4,
     },
     {
       id: 'speed',
+      category: 'stat',
       name: '体力づくり',
       description: '移動速度 +8%',
-      maxRank: 5,
+      maxRank: 6,
       baseCost: 80,
       step: 0.08,
     },
     {
       id: 'antiResist',
+      category: 'stat',
       name: 'メンタルケア',
       description: 'アンチによるHeat減少を2緩和',
-      maxRank: 4,
+      maxRank: 6,
       baseCost: 120,
       step: 2,
+    },
+    {
+      id: 'heatStamina',
+      category: 'stat',
+      name: 'スタミナ強化',
+      description: '観客の自然冷却 -0.3/秒（中箱以上のHeat鈍化に対抗する）',
+      maxRank: 6,
+      baseCost: 110,
+      step: 0.3,
+    },
+    {
+      id: 'antiPower',
+      category: 'stat',
+      name: '護衛訓練',
+      description: '歌のアンチダメージ +1（大きい会場のアンチ猛攻に対抗する）',
+      maxRank: 3,
+      baseCost: 150,
+      step: 1,
+    },
+    // --- キャラクター解放（1 回だけ購入） ---
+    {
+      id: 'unlockUyu',
+      category: 'character',
+      characterId: 'uyu',
+      name: 'うゆ 加入',
+      description: 'キャラクター「うゆ」が選択可能になる',
+      maxRank: 1,
+      baseCost: 150,
+      step: 0,
+    },
+    {
+      id: 'unlockMirei',
+      category: 'character',
+      characterId: 'mirei',
+      name: 'みれい 加入',
+      description: 'キャラクター「みれい」が選択可能になる',
+      maxRank: 1,
+      baseCost: 220,
+      step: 0,
+    },
+    {
+      id: 'unlockKotone',
+      category: 'character',
+      characterId: 'kotone',
+      name: 'ことね 加入',
+      description: 'キャラクター「ことね」が選択可能になる',
+      maxRank: 1,
+      baseCost: 220,
+      step: 0,
+    },
+    {
+      id: 'unlockMayupi',
+      category: 'character',
+      characterId: 'mayupi',
+      name: 'まゆぴ 加入',
+      description: 'キャラクター「まゆぴ」が選択可能になる',
+      maxRank: 1,
+      baseCost: 300,
+      step: 0,
+    },
+    // --- 会場解放（1 回だけ購入。規模が大きいほど難易度も上がる） ---
+    {
+      id: 'unlockMedium',
+      category: 'stage',
+      stageId: 'medium',
+      name: '中箱 解放',
+      description: '観客約2倍の会場が選択可能になる',
+      maxRank: 1,
+      baseCost: 200,
+      step: 0,
+    },
+    {
+      id: 'unlockLarge',
+      category: 'stage',
+      stageId: 'large',
+      name: '大箱 解放',
+      description: '観客約4倍の会場が選択可能になる',
+      maxRank: 1,
+      baseCost: 400,
+      step: 0,
+    },
+    {
+      id: 'unlockArena',
+      category: 'stage',
+      stageId: 'arena',
+      name: 'アリーナ 解放',
+      description: '観客約6倍の会場が選択可能になる',
+      maxRank: 1,
+      baseCost: 700,
+      step: 0,
+    },
+    {
+      id: 'unlockDome',
+      category: 'stage',
+      stageId: 'dome',
+      name: 'ドーム 解放',
+      description: '観客約8倍の会場が選択可能になる',
+      maxRank: 1,
+      baseCost: 1200,
+      step: 0,
     },
   ],
 };

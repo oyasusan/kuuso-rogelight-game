@@ -20,7 +20,7 @@ const DEFAULT_SAVE = {
   /** 選択中のキャラクター id */
   characterId: 'suzu',
   /** 選択中のステージ id */
-  stageId: 'hall',
+  stageId: 'small',
 };
 
 class SaveSystem {
@@ -70,10 +70,16 @@ class SaveSystem {
     this.persist();
   }
 
-  /** 永久強化の進行（所持ファン・全ランク）をリセットする。キャラ/ステージ選択は保持する */
+  /**
+   * 永久強化の進行（所持ファン・全ランク）をリセットする。
+   * キャラクター・ステージの解放も失われるため、選択中のものが解放前に
+   * 戻せない状態にならないよう選択も初期値（すず / 小箱）に戻す
+   */
   resetPermanent() {
     this.data.fans = 0;
     this.data.permaRanks = {};
+    this.data.characterId = DEFAULT_SAVE.characterId;
+    this.data.stageId = DEFAULT_SAVE.stageId;
     this.persist();
   }
 }

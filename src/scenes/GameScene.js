@@ -64,7 +64,10 @@ export default class GameScene extends Phaser.Scene {
     );
     this.player.moveSpeed = this.mods.playerSpeed;
 
-    this.heatSystem = new HeatSystem(this.audiences);
+    this.heatSystem = new HeatSystem(
+      this.audiences,
+      this.mods.audienceHeatDecayPerSec,
+    );
     this.levelSystem = new LevelSystem();
 
     // パフォーマンス。歌のみ最初から有効、他はレベルアップで取得
@@ -83,6 +86,7 @@ export default class GameScene extends Phaser.Scene {
     this.mc = new MCPerformance(this, this.player, this.heatSystem);
     this.song.heatGain = this.mods.songHeatGain;
     this.song.radius = this.mods.songRadius;
+    this.song.damage = SONG_CONFIG.DAMAGE + this.mods.songDamageBonus;
     this.song.start(SONG_CONFIG.INTERVAL_MS);
 
     this.upgradeSystem = new UpgradeSystem({
@@ -202,10 +206,11 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  /** 経過時間に応じた数のアンチを画面外にスポーンさせる */
+  /** 経過時間・ステージ規模に応じた数のアンチを画面外にスポーンさせる */
   spawnAntiWave() {
     const elapsedSec = GAME.LIVE_DURATION_SEC - this.remainingSec;
-    const count = 1 + Math.floor(elapsedSec / ANTI_CONFIG.RAMP_EVERY_SEC);
+    const baseCount = 1 + Math.floor(elapsedSec / ANTI_CONFIG.RAMP_EVERY_SEC);
+    const count = Math.max(1, Math.round(baseCount * this.mods.antiWaveMult));
     this.spawnSystem.spawnAntis(count);
   }
 

@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { CHARACTERS, GAME, STAGES, UI_CONFIG } from '../constants.js';
+import { CHARACTERS, GAME, PERMA_CONFIG, STAGES, UI_CONFIG } from '../constants.js';
 import audioSystem from '../systems/AudioSystem.js';
 import saveSystem from '../systems/SaveSystem.js';
+import { isCharacterUnlocked, isStageUnlocked } from '../systems/RunModifiers.js';
 
 /** 選択カードの見た目 */
 const CARD = {
@@ -9,6 +10,8 @@ const CARD = {
   COLOR_SELECTED: 0x2d2d55,
   BORDER: 0x444466,
   BORDER_SELECTED: 0xffdd66,
+  COLOR_LOCKED: 0x131320,
+  BORDER_LOCKED: 0x333344,
 };
 
 /** キャラクターカードのグリッド設定（7 人を 4 列×2 行で並べる） */
@@ -20,6 +23,21 @@ const CHARACTER_GRID = {
   ROW_PITCH: 136,
   TOP_Y: 156,
 };
+
+/** ステージカードの見た目（5 会場を横一列で並べる） */
+const STAGE_CARD = {
+  WIDTH: 172,
+  HEIGHT: 78,
+  PITCH: 180,
+  Y: 416,
+};
+
+/** 永久強化の解放コストを取得する（未定義なら null） */
+function findUnlockUpgrade(upgradeId) {
+  return upgradeId
+    ? PERMA_CONFIG.UPGRADES.find((u) => u.id === upgradeId)
+    : null;
+}
 
 /**
  * タイトル画面。
@@ -87,6 +105,8 @@ export default class HomeScene extends Phaser.Scene {
       const itemsInRow = Math.min(COLS, CHARACTERS.length - row * COLS);
       const x = centerX + (col - (itemsInRow - 1) / 2) * COL_PITCH;
       const y = TOP_Y + row * ROW_PITCH;
+      const unlocked = isCharacterUnlocked(character);
+      const unlockUpgrade = findUnlockUpgrade(character.unlockUpgradeId);
       return this.createSelectCard({
         x,
         y,
@@ -96,6 +116,10 @@ export default class HomeScene extends Phaser.Scene {
         titleColor: character.color,
         description: character.description,
         descriptionFontSize: '12px',
+        locked: !unlocked,
+        lockHint: unlockUpgrade
+          ? `🔒 永久強化で解放\n(${unlockUpgrade.baseCost}ファン)`
+          : '🔒 未解放',
         isSelected: () => saveSystem.data.characterId === character.id,
         onClick: () => {
           saveSystem.data.characterId = character.id;
@@ -104,7 +128,7 @@ export default class HomeScene extends Phaser.Scene {
       });
     });
 
-    // --- ステージ選択 ---
+    // --- ステージ選択（5 会場を横一列で並べる） ---
     this.add
       .text(centerX, 368, 'ステージ', {
         fontFamily: UI_CONFIG.FONT_FAMILY,
@@ -114,15 +138,23 @@ export default class HomeScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.stageCards = STAGES.map((stage, index) => {
-      const x = centerX + (index - 0.5) * 250;
+      const x =
+        centerX + (index - (STAGES.length - 1) / 2) * STAGE_CARD.PITCH;
+      const unlocked = isStageUnlocked(stage);
+      const unlockUpgrade = findUnlockUpgrade(stage.unlockUpgradeId);
       return this.createSelectCard({
         x,
-        y: 416,
-        width: 230,
-        height: 76,
+        y: STAGE_CARD.Y,
+        width: STAGE_CARD.WIDTH,
+        height: STAGE_CARD.HEIGHT,
         title: stage.name,
         titleColor: 0xffffff,
         description: stage.description,
+        descriptionFontSize: '11px',
+        locked: !unlocked,
+        lockHint: unlockUpgrade
+          ? `🔒 解放\n(${unlockUpgrade.baseCost}ファン)`
+          : '🔒 未解放',
         isSelected: () => saveSystem.data.stageId === stage.id,
         onClick: () => {
           saveSystem.data.stageId = stage.id;
@@ -157,6 +189,7 @@ export default class HomeScene extends Phaser.Scene {
 
   /**
    * 選択カードを 1 枚作る。
+   * locked: true の場合は説明の代わりに lockHint を表示し、選択できないようにする。
    * @returns {{ refresh: Function }} 選択状態の再描画関数を持つオブジェクト
    */
   createSelectCard({
@@ -168,34 +201,44 @@ export default class HomeScene extends Phaser.Scene {
     titleColor,
     description,
     descriptionFontSize = '13px',
+    locked = false,
+    lockHint = '',
     isSelected,
     onClick,
   }) {
     const rect = this.add
-      .rectangle(x, y, width, height, CARD.COLOR)
-      .setStrokeStyle(2, CARD.BORDER)
-      .setInteractive({ useHandCursor: true });
+      .rectangle(x, y, width, height, locked ? CARD.COLOR_LOCKED : CARD.COLOR)
+      .setStrokeStyle(2, locked ? CARD.BORDER_LOCKED : CARD.BORDER);
 
-    this.add
+    const titleText = this.add
       .text(x, y - height / 2 + 20, title, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '18px',
         color: '#ffffff',
         fontStyle: 'bold',
       })
-      .setOrigin(0.5)
-      .setTint(titleColor);
+      .setOrigin(0.5);
+    if (locked) {
+      titleText.setColor('#555566');
+    } else {
+      titleText.setTint(titleColor);
+    }
 
     this.add
-      .text(x, y + 12, description, {
+      .text(x, y + 12, locked ? lockHint : description, {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: descriptionFontSize,
-        color: '#bbbbdd',
+        color: locked ? '#555566' : '#bbbbdd',
         align: 'center',
         lineSpacing: 3,
       })
       .setOrigin(0.5);
 
+    if (locked) {
+      return { refresh: () => {} };
+    }
+
+    rect.setInteractive({ useHandCursor: true });
     rect.on('pointerdown', () => {
       audioSystem.unlock();
       audioSystem.playSelect();

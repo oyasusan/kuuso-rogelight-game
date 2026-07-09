@@ -46,7 +46,7 @@ export default class SettingsScene extends Phaser.Scene {
     this.add.text(
       centerX - 290,
       202,
-      '所持ファンと、購入した永久強化のランクをすべて 0 に戻します。\nキャラクター・ステージの選択は保持されます。この操作は取り消せません。',
+      '所持ファンと、購入した永久強化のランク・解放をすべて 0 に戻します。\nキャラクター・ステージの選択も初期状態（すず / 小箱）に戻ります。この操作は取り消せません。',
       {
         fontFamily: UI_CONFIG.FONT_FAMILY,
         fontSize: '14px',
@@ -121,7 +121,7 @@ export default class SettingsScene extends Phaser.Scene {
     );
     objects.push(
       this.add
-        .text(centerX, centerY - 20, 'ファンと全ランクが 0 に戻ります（取り消せません）', {
+        .text(centerX, centerY - 20, 'ファン・全ランク・解放状況が 0 に戻ります（取り消せません）', {
           fontFamily: UI_CONFIG.FONT_FAMILY,
           fontSize: '14px',
           color: '#ffaaaa',
