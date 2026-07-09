@@ -290,6 +290,14 @@ class AudioSystem {
     this.tone(this.now + 0.16, { freq: 160, type: 'sawtooth', duration: 0.18, gain: 0.14 });
   }
 
+  /** ボスが出現した（ウェーブ警告より低く長く、不穏さを強調する） */
+  playBossAlert() {
+    if (!this.context) return;
+    this.tone(this.now, { freq: 140, type: 'sawtooth', duration: 0.22, gain: 0.18 });
+    this.tone(this.now + 0.24, { freq: 110, type: 'sawtooth', duration: 0.22, gain: 0.18 });
+    this.tone(this.now + 0.48, { freq: 80, slideTo: 60, type: 'sawtooth', duration: 0.4, gain: 0.2 });
+  }
+
   /** リザルトのファンファーレ */
   playResultFanfare() {
     if (!this.context) return;

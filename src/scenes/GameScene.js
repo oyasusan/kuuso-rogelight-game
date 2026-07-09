@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import Player from '../objects/Player.js';
-import { createIdolTexture, createSilhouetteTexture } from '../objects/PixelArt.js';
+import {
+  createIdolTexture,
+  createObstacleTexture,
+  createSilhouetteTexture,
+} from '../objects/PixelArt.js';
 import { buildAudienceGrid } from '../objects/audiencePixelGrid.js';
 import { buildAntiGrid } from '../objects/antiPixelGrid.js';
 import {
@@ -21,6 +25,7 @@ import UpgradePanel from '../ui/UpgradePanel.js';
 import {
   ANTI_CONFIG,
   ANTI_SPRITE_CONFIG,
+  ANTI_TYPES,
   AUDIENCE_SPRITE_CONFIG,
   COMBO_CONFIG,
   DEPTH,
@@ -62,6 +67,9 @@ export default class GameScene extends Phaser.Scene {
       this.mods.audienceInitialHeat,
     );
     this.antiGroup = this.spawnSystem.antiGroup;
+    // 障害物（中箱以降のみ、ライブごとにランダム配置）。プレイヤーとだけ衝突させ、
+    // アンチはすり抜けられるようにする
+    this.obstacles = this.spawnSystem.spawnObstacles(this.mods.stage);
 
     this.player = new Player(
       this,
@@ -70,6 +78,7 @@ export default class GameScene extends Phaser.Scene {
       `idol-${this.mods.character.id}`,
     );
     this.player.moveSpeed = this.mods.playerSpeed;
+    this.physics.add.collider(this.player, this.obstacles);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
     this.heatSystem = new HeatSystem(
@@ -162,6 +171,8 @@ export default class GameScene extends Phaser.Scene {
     });
     // アンチのウェーブ出現（告知つきの大量出現。1 ゲームに stage.waveCount 回だけ発生）
     this.scheduleWaves();
+    // ボス（1 ゲームに 1 体だけ出現）
+    this.time.delayedCall(ANTI_CONFIG.BOSS_SPAWN_MS, () => this.spawnBoss());
 
     this.updateHud();
   }
@@ -188,6 +199,7 @@ export default class GameScene extends Phaser.Scene {
       ANTI_SPRITE_CONFIG.CELL_SIZE,
       ANTI_SPRITE_CONFIG.SHADE_FACTOR,
     );
+    createObstacleTexture(this);
   }
 
   /** 白い円のテクスチャを生成する（表示時に tint で着色する） */
@@ -209,6 +221,11 @@ export default class GameScene extends Phaser.Scene {
     this.player.update();
     for (const anti of this.antiGroup.getMatching('active', true)) {
       anti.chase(this.player);
+      // ジャマー種の遠隔パルス攻撃（接触しなくても定期的に周囲の Heat を削る）
+      if (anti.pulseIntervalMs && time >= anti.nextPulseAt) {
+        this.emitAntiPulse(anti);
+        anti.nextPulseAt = time + anti.pulseIntervalMs;
+      }
     }
     // 観客は Heat に応じて揺れ、熱狂するとジャンプする
     for (const audience of this.audiences) {
@@ -229,7 +246,7 @@ export default class GameScene extends Phaser.Scene {
       1,
       Math.round(baseCount * this.mods.stage.antiNormalCountMult),
     );
-    this.spawnSystem.spawnAntis(count);
+    this.spawnSystem.spawnAntis(count, () => this.pickAntiType('normalWeight'));
   }
 
   /**
@@ -253,8 +270,107 @@ export default class GameScene extends Phaser.Scene {
     const count = Math.round(
       ANTI_CONFIG.WAVE_BASE_SIZE * this.mods.stage.waveSizeMult,
     );
-    this.spawnSystem.spawnAntis(count);
+    this.spawnSystem.spawnAntis(count, () => this.pickAntiType('waveWeight'));
     this.announceWave(waveNumber);
+  }
+
+  /**
+   * ANTI_TYPES から重み付きランダムで 1 種類を選ぶ。
+   * @param {'normalWeight' | 'waveWeight'} weightKey 通常出現かウェーブ出現かで抽選プールを変える
+   */
+  pickAntiType(weightKey) {
+    const pool = ANTI_TYPES.filter((t) => t[weightKey] > 0);
+    const totalWeight = pool.reduce((sum, t) => sum + t[weightKey], 0);
+    let roll = Math.random() * totalWeight;
+    for (const type of pool) {
+      roll -= type[weightKey];
+      if (roll <= 0) {
+        return type;
+      }
+    }
+    return pool[pool.length - 1];
+  }
+
+  /** ボスを 1 体だけスポーンさせ、専用の告知を出す（1 ゲームに 1 回） */
+  spawnBoss() {
+    const bossType = ANTI_TYPES.find((t) => t.id === 'boss');
+    const anti = this.antiGroup.get();
+    if (!anti) {
+      return;
+    }
+    const { x, y } = this.spawnSystem.randomOffscreenPosition();
+    anti.spawn(x, y, { ...bossType, hpMult: this.mods.stage.bossHpMult });
+    this.announceBoss();
+  }
+
+  /** 画面中央にボス出現を大きく告知する（ウェーブ告知より目立つ演出にする） */
+  announceBoss() {
+    audioSystem.playBossAlert();
+
+    const text = this.add
+      .text(GAME.WIDTH / 2, GAME.HEIGHT / 2 - 70, 'ボス出現！', {
+        fontFamily: UI_CONFIG.FONT_FAMILY,
+        fontSize: '44px',
+        color: '#ff2244',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 6,
+      })
+      .setOrigin(0.5)
+      .setDepth(DEPTH.UI)
+      .setScrollFactor(0)
+      .setAlpha(0)
+      .setScale(1.4);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 1,
+      scale: 1,
+      duration: 250,
+      ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: text,
+          alpha: 0,
+          y: text.y - 24,
+          delay: 1000,
+          duration: 600,
+          ease: 'Quad.easeIn',
+          onComplete: () => text.destroy(),
+        });
+      },
+    });
+  }
+
+  /** ジャマー種の遠隔パルス攻撃。接触なしで周囲の観客の Heat を削り、視覚フィードバックを出す */
+  emitAntiPulse(anti) {
+    this.heatSystem.applyHeatInRadius(
+      anti.x,
+      anti.y,
+      anti.pulseRadius,
+      anti.pulseHeatDrain,
+    );
+
+    const ring = this.add
+      .circle(anti.x, anti.y, anti.pulseRadius, 0x99ee33, 0.25)
+      .setDepth(DEPTH.EFFECT);
+    this.tweens.add({
+      targets: ring,
+      alpha: 0,
+      scale: 1.15,
+      duration: 350,
+      ease: 'Quad.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+  }
+
+  /** ボス撃破時の演出とボーナス経験値 */
+  onBossDefeated(x, y) {
+    this.levelSystem.gainExp(FRENZY_CONFIG.EXP_PER_FRENZY * 5);
+    this.frenzySpark.explode(20, x, y);
+    audioSystem.playFrenzy();
+    this.showFloatingText(x, y - 20, 'ボス撃破！', '#ffdd66');
+    this.updateHud();
   }
 
   /** 画面中央にアンチのウェーブ襲来を大きく告知する */
@@ -301,8 +417,17 @@ export default class GameScene extends Phaser.Scene {
     if (!anti.active) {
       return;
     }
-    anti.despawn();
-    this.heatSystem.applyHeatToAll(this.mods.antiHeatDrain);
+    // ボスは接触しても退場しない代わりに、クールタイム中は多重ヒットしない
+    // （Arcade の overlap は重なっている間 毎フレーム発火するため）
+    if (anti.contactCooldownMs > 0) {
+      if (this.time.now < anti.contactCooldownUntil) {
+        return;
+      }
+      anti.contactCooldownUntil = this.time.now + anti.contactCooldownMs;
+    } else {
+      anti.despawn();
+    }
+    this.heatSystem.applyHeatToAll(this.mods.antiHeatDrain * anti.heatDrainMult);
     // 熱狂済みの観客も一部クールダウンさせる（積み上げた盛り上がりにも及ぶ罰則）
     const cooledCount = this.heatSystem.cooldownRandomFrenzy(
       ANTI_CONFIG.FRENZY_COOLDOWN_RATIO,

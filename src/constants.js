@@ -16,6 +16,7 @@ export const GAME = {
 export const DEPTH = {
   STAGE: 0,
   AUDIENCE: 1,
+  OBSTACLE: 2,
   ANTI: 3,
   PLAYER: 5,
   EFFECT: 8,
@@ -29,6 +30,23 @@ export const PLAYER_CONFIG = {
   SPEED: 240,
   /** 当たり判定の半径相当（px）。ドット絵の見た目サイズとは独立に調整する */
   RADIUS: 14,
+};
+
+/**
+ * 障害物（機材ケース風のボックス）関連。中箱以降のステージにのみ配置される
+ * （個数・サイズは STAGES[].obstacles で会場ごとに指定する）。
+ * プレイヤーは衝突して通れないが、アンチは無視してすり抜ける
+ * （GameScene 側でプレイヤーとのみ collider を張ることで実現している）。
+ */
+export const OBSTACLE_CONFIG = {
+  /** ワールド端からの最小距離（px） */
+  WORLD_MARGIN: 60,
+  /** プレイヤーの初期位置（ワールド中心）から確保する安全地帯の半径（px） */
+  SPAWN_EXCLUSION_RADIUS: 170,
+  /** 障害物どうしの最小の隙間（px）。プレイヤーが通り抜けられる幅を確保する */
+  MIN_GAP: 80,
+  /** 配置を試みる最大回数（1 個あたり）。密集して置き場所が見つからない場合に無限ループしないためのガード */
+  MAX_ATTEMPTS_PER_OBSTACLE: 20,
 };
 
 /** ドット絵アイドルの生成設定（Player.js の見た目に使用） */
@@ -215,7 +233,92 @@ export const ANTI_CONFIG = {
   POOL_SIZE: 96,
   /** 画面外スポーン時の画面端からの距離（px） */
   SPAWN_MARGIN: 30,
+
+  // --- ボス（1 ゲームに 1 体だけ登場する特別なアンチ） ---
+  /** ボスが出現するタイミング（ミリ秒） */
+  BOSS_SPAWN_MS: 60000,
 };
+
+/**
+ * アンチの種類。ANTI_CONFIG の SIZE/SPEED/MAX_HP/HEAT_DRAIN を基準値として、
+ * 各倍率を掛けて個性を出す。
+ * behavior: 'contact'（プレイヤーに接触したときだけ効果を発揮）/
+ *   'pulse'（接触しなくても一定間隔で周囲の Heat を削る遠隔攻撃。ジャマー専用）
+ * normalWeight/waveWeight: 通常出現・ウェーブ出現での抽選重み（0 なら出現しない）。
+ * ボスは抽選には使わず、GameScene.spawnBoss が個別に生成する
+ * （HP は stage.bossHpMult で会場ごとに調整される）。
+ */
+export const ANTI_TYPES = [
+  {
+    id: 'normal',
+    name: '通常',
+    color: 0x9933ee,
+    speedMult: 1,
+    sizeMult: 1,
+    hpMult: 1,
+    heatDrainMult: 1,
+    behavior: 'contact',
+    normalWeight: 6,
+    waveWeight: 4,
+  },
+  {
+    id: 'runner',
+    name: 'ランナー',
+    description: '速いが打たれ弱い',
+    color: 0x33ccff,
+    speedMult: 1.6,
+    sizeMult: 0.7,
+    hpMult: 0.7,
+    heatDrainMult: 0.6,
+    behavior: 'contact',
+    normalWeight: 2,
+    waveWeight: 3,
+  },
+  {
+    id: 'brute',
+    name: 'ブルート',
+    description: '遅いが硬く、接触ダメージが大きい',
+    color: 0xcc4422,
+    speedMult: 0.6,
+    sizeMult: 1.6,
+    hpMult: 2.5,
+    heatDrainMult: 1.8,
+    behavior: 'contact',
+    normalWeight: 1,
+    waveWeight: 2,
+  },
+  {
+    id: 'jammer',
+    name: 'ジャマー',
+    description: '接触しなくても周囲のHeatを定期的に削る',
+    color: 0x99ee33,
+    speedMult: 0.85,
+    sizeMult: 1,
+    hpMult: 1.2,
+    heatDrainMult: 0.8,
+    behavior: 'pulse',
+    pulseRadius: 90,
+    pulseIntervalMs: 2200,
+    pulseHeatDrain: -4,
+    normalWeight: 0,
+    waveWeight: 2,
+  },
+  {
+    id: 'boss',
+    name: 'ボス',
+    description: '1ゲームに1体だけ現れる巨大なアンチ',
+    color: 0xdd1144,
+    speedMult: 0.5,
+    sizeMult: 2.4,
+    hpMult: 6,
+    heatDrainMult: 3,
+    behavior: 'contact',
+    /** ボスは接触しても退場せず、この間隔ごとに 1 回だけダメージ判定を受ける */
+    contactCooldownMs: 1200,
+    normalWeight: 0,
+    waveWeight: 0,
+  },
+];
 
 /** レベルアップ時のアップグレード関連 */
 export const UPGRADE_CONFIG = {
@@ -416,7 +519,12 @@ export const CHARACTERS = [
  * antiNormalCountMult: 通常出現 1 回あたりの人数の倍率
  * waveCount: 1 ゲームあたりのウェーブ回数（3〜5 回を目安にしている）
  * waveSizeMult: ウェーブ 1 回あたりの出現数の倍率（ANTI_CONFIG.WAVE_BASE_SIZE に乗算）
+ * bossHpMult: ボス（1 ゲームに 1 体、ANTI_CONFIG.BOSS_SPAWN_MS に出現）の HP 倍率
+ *   （ANTI_TYPES の 'boss'.hpMult をこの値で上書きする）
  * heatDecayMult: 観客の自然冷却速度の倍率（大きいほど Heat が鈍化しやすい）
+ * obstacles: 障害物の個数・サイズ範囲（{ count, minSize, maxSize } または null）。
+ *   小箱は null（障害物なし）。中箱以降はライブ開始のたびにランダムな位置へ
+ *   再配置される（SpawnSystem.spawnObstacles を参照）
  * unlocked: false のステージは最初は選択できず、PERMA_CONFIG.UPGRADES の
  * unlockUpgradeId で指定した永久強化を購入すると解放される
  * （判定は RunModifiers.isStageUnlocked を使う）。
@@ -433,7 +541,9 @@ export const STAGES = [
     antiNormalCountMult: 1,
     waveCount: 3,
     waveSizeMult: 1,
+    bossHpMult: 4,
     heatDecayMult: 1,
+    obstacles: null,
     unlocked: true,
     unlockUpgradeId: null,
     blocks: [{ x: 60, y: 130, width: 840, height: 360, cols: 16, rows: 7 }],
@@ -449,7 +559,9 @@ export const STAGES = [
     antiNormalCountMult: 1.2,
     waveCount: 3,
     waveSizeMult: 1.2,
+    bossHpMult: 5,
     heatDecayMult: 1.15,
+    obstacles: { count: 5, minSize: 40, maxSize: 70 },
     unlocked: false,
     unlockUpgradeId: 'unlockMedium',
     blocks: [{ x: 168, y: 170, width: 1064, height: 560, cols: 20, rows: 11 }],
@@ -465,7 +577,9 @@ export const STAGES = [
     antiNormalCountMult: 1.5,
     waveCount: 4,
     waveSizeMult: 1.5,
+    bossHpMult: 6,
     heatDecayMult: 1.3,
+    obstacles: { count: 8, minSize: 45, maxSize: 80 },
     unlocked: false,
     unlockUpgradeId: 'unlockLarge',
     blocks: [{ x: 150, y: 152, width: 1400, height: 896, cols: 26, rows: 17 }],
@@ -481,7 +595,9 @@ export const STAGES = [
     antiNormalCountMult: 1.8,
     waveCount: 4,
     waveSizeMult: 1.8,
+    bossHpMult: 7,
     heatDecayMult: 1.45,
+    obstacles: { count: 11, minSize: 50, maxSize: 90 },
     unlocked: false,
     unlockUpgradeId: 'unlockArena',
     blocks: [{ x: 157, y: 165, width: 1736, height: 1120, cols: 32, rows: 21 }],
@@ -497,7 +613,9 @@ export const STAGES = [
     antiNormalCountMult: 2.2,
     waveCount: 5,
     waveSizeMult: 2.2,
+    bossHpMult: 8,
     heatDecayMult: 1.6,
+    obstacles: { count: 14, minSize: 55, maxSize: 100 },
     unlocked: false,
     unlockUpgradeId: 'unlockDome',
     blocks: [{ x: 164, y: 156, width: 2072, height: 1288, cols: 38, rows: 24 }],

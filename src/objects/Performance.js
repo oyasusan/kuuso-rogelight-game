@@ -98,7 +98,11 @@ export class SongPerformance extends Performance {
     for (const anti of this.antiGroup.getMatching('active', true)) {
       const distSq = Phaser.Math.Distance.BetweenPointsSquared({ x, y }, anti);
       if (distSq <= radiusSq) {
-        anti.takeDamage(this.damage);
+        const wasBoss = anti.type === 'boss';
+        const defeated = anti.takeDamage(this.damage);
+        if (defeated && wasBoss) {
+          this.scene.onBossDefeated?.(anti.x, anti.y);
+        }
         hitAny = true;
       }
     }

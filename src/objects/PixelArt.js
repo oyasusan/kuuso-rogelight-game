@@ -92,3 +92,32 @@ export function createSilhouetteTexture(scene, key, buildGrid, cellSize, shadeFa
   graphics.generateTexture(key, cols * cellSize, rows * cellSize);
   graphics.destroy();
 }
+
+/**
+ * 障害物（機材ケース風のボックス）のドット絵テクスチャを 1 つだけ生成する。
+ * 実際の見た目サイズは Obstacle ごとに setDisplaySize で変える（テクスチャ自体は使い回す）。
+ * @param {Phaser.Scene} scene
+ */
+export function createObstacleTexture(scene) {
+  const key = 'obstacle';
+  if (scene.textures.exists(key)) {
+    return;
+  }
+
+  const size = 32;
+  const graphics = scene.make.graphics({ add: false });
+  graphics.fillStyle(0x3a3a4a);
+  graphics.fillRect(0, 0, size, size);
+  graphics.fillStyle(0x55556e);
+  graphics.fillRect(2, 2, size - 4, 6);
+  graphics.fillStyle(0x1e1e28);
+  graphics.fillRect(0, size - 6, size, 6);
+  // 四隅の金具（アクセントカラーで少し目立たせる）
+  graphics.fillStyle(0xffdd66);
+  graphics.fillRect(0, 0, 5, 5);
+  graphics.fillRect(size - 5, 0, 5, 5);
+  graphics.fillRect(0, size - 5, 5, 5);
+  graphics.fillRect(size - 5, size - 5, 5, 5);
+  graphics.generateTexture(key, size, size);
+  graphics.destroy();
+}
