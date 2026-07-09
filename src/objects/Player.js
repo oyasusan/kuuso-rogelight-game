@@ -3,7 +3,8 @@ import { DEPTH, PLAYER_CONFIG } from '../constants.js';
 
 /**
  * プレイヤー（アイドル）。
- * WASD / 矢印キーで移動する。攻撃操作はなく、パフォーマンスは自動発動。
+ * WASD / 矢印キー、またはタッチデバイスでは仮想パッド（virtualJoystick）で移動する。
+ * 攻撃操作はなく、パフォーマンスは自動発動。
  */
 export default class Player extends Phaser.Physics.Arcade.Image {
   /**
@@ -41,6 +42,11 @@ export default class Player extends Phaser.Physics.Arcade.Image {
     this.moveSpeed = PLAYER_CONFIG.SPEED;
     /** 最後に移動した方向（ラジアン）。ダンスの扇形の向きに使う */
     this.facingAngle = -Math.PI / 2;
+    /**
+     * 仮想パッド（VirtualJoystick）。タッチデバイスのみ GameScene が生成して
+     * ここへセットする。未設定なら null のままでキーボードのみで動作する
+     */
+    this.virtualJoystick = null;
   }
 
   /** 毎フレームの入力処理 */
@@ -50,17 +56,28 @@ export default class Player extends Phaser.Physics.Arcade.Image {
     const up = this.cursors.up.isDown || this.wasd.up.isDown;
     const down = this.cursors.down.isDown || this.wasd.down.isDown;
 
-    const dirX = (right ? 1 : 0) - (left ? 1 : 0);
-    const dirY = (down ? 1 : 0) - (up ? 1 : 0);
+    let dirX = (right ? 1 : 0) - (left ? 1 : 0);
+    let dirY = (down ? 1 : 0) - (up ? 1 : 0);
+    let magnitude = dirX !== 0 || dirY !== 0 ? 1 : 0;
 
-    // 斜め移動が速くならないよう正規化する
+    // 仮想パッドの入力があればキーボードより優先する（傾きの割合をそのまま速度に使う）
+    const joyVector = this.virtualJoystick?.getVector();
+    if (joyVector && (joyVector.x !== 0 || joyVector.y !== 0)) {
+      dirX = joyVector.x;
+      dirY = joyVector.y;
+      magnitude = Math.min(1, Math.hypot(dirX, dirY));
+    }
+
+    if (magnitude === 0) {
+      this.setVelocity(0, 0);
+      return;
+    }
+
+    // 斜め移動が速くならないよう正規化してから、傾きの割合で速度を落とす
     const velocity = new Phaser.Math.Vector2(dirX, dirY)
       .normalize()
-      .scale(this.moveSpeed);
+      .scale(this.moveSpeed * magnitude);
     this.setVelocity(velocity.x, velocity.y);
-
-    if (dirX !== 0 || dirY !== 0) {
-      this.facingAngle = Math.atan2(dirY, dirX);
-    }
+    this.facingAngle = Math.atan2(dirY, dirX);
   }
 }

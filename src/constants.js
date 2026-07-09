@@ -33,6 +33,33 @@ export const PLAYER_CONFIG = {
 };
 
 /**
+ * 仮想パッド（スマホ等タッチデバイス向けの移動操作）関連。
+ * タッチ対応デバイスでのみ画面左下にオーバーレイ表示する（VirtualJoystick を参照）。
+ */
+export const JOYSTICK_CONFIG = {
+  /** ベース（外側の円）の半径（px） */
+  BASE_RADIUS: 50,
+  /** ノブ（操作する内側の円）の半径（px） */
+  KNOB_RADIUS: 24,
+  /** 画面左端からの中心 x 座標（px） */
+  X: 110,
+  /** 画面下端からの中心 y 座標のオフセット（px） */
+  Y_FROM_BOTTOM: 110,
+  /**
+   * タッチ開始を受け付ける範囲（ベース半径の倍率）。
+   * 見た目より少し広めに取ることで、多少ズレてタッチしても反応するようにする
+   */
+  GRAB_RADIUS_MULTIPLIER: 1.8,
+  /** この割合未満の傾きは入力なしとみなす（わずかな指のブレで動き出さないように） */
+  DEAD_ZONE_RATIO: 0.15,
+  BASE_COLOR: 0xffffff,
+  BASE_ALPHA: 0.15,
+  BASE_BORDER_ALPHA: 0.35,
+  KNOB_COLOR: 0xffffff,
+  KNOB_ALPHA: 0.4,
+};
+
+/**
  * 障害物（機材ケース風のボックス）関連。中箱以降のステージにのみ配置される
  * （個数・サイズは STAGES[].obstacles で会場ごとに指定する）。
  * プレイヤーは衝突して通れないが、アンチは無視してすり抜ける

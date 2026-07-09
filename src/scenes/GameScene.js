@@ -22,6 +22,7 @@ import audioSystem from '../systems/AudioSystem.js';
 import { buildRunModifiers } from '../systems/RunModifiers.js';
 import HUD from '../ui/HUD.js';
 import UpgradePanel from '../ui/UpgradePanel.js';
+import VirtualJoystick from '../ui/VirtualJoystick.js';
 import {
   ANTI_CONFIG,
   ANTI_SPRITE_CONFIG,
@@ -80,6 +81,12 @@ export default class GameScene extends Phaser.Scene {
     this.player.moveSpeed = this.mods.playerSpeed;
     this.physics.add.collider(this.player, this.obstacles);
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+
+    // タッチデバイスのみ、画面左下に仮想パッドをオーバーレイ表示する
+    if (this.sys.game.device.input.touch) {
+      this.virtualJoystick = new VirtualJoystick(this);
+      this.player.virtualJoystick = this.virtualJoystick;
+    }
 
     this.heatSystem = new HeatSystem(
       this.audiences,
