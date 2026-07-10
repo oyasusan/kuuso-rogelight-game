@@ -30,26 +30,20 @@ export const PLAYER_CONFIG = {
   SPEED: 240,
   /** 当たり判定の半径相当（px）。ドット絵の見た目サイズとは独立に調整する */
   RADIUS: 14,
+  /** 経験値オーブの吸収範囲（px）。レベルアップ強化で拡大する */
+  MAGNET_RADIUS: 60,
 };
 
 /**
  * 仮想パッド（スマホ等タッチデバイス向けの移動操作）関連。
- * タッチ対応デバイスでのみ画面左下にオーバーレイ表示する（VirtualJoystick を参照）。
+ * タッチ対応デバイスでのみ、画面をタップした位置にフローティング表示する
+ * （VirtualJoystick を参照）。指を離すと消え、次にタップした位置に再び現れる。
  */
 export const JOYSTICK_CONFIG = {
   /** ベース（外側の円）の半径（px） */
   BASE_RADIUS: 50,
   /** ノブ（操作する内側の円）の半径（px） */
   KNOB_RADIUS: 24,
-  /** 画面左端からの中心 x 座標（px） */
-  X: 110,
-  /** 画面下端からの中心 y 座標のオフセット（px） */
-  Y_FROM_BOTTOM: 110,
-  /**
-   * タッチ開始を受け付ける範囲（ベース半径の倍率）。
-   * 見た目より少し広めに取ることで、多少ズレてタッチしても反応するようにする
-   */
-  GRAB_RADIUS_MULTIPLIER: 1.8,
   /** この割合未満の傾きは入力なしとみなす（わずかな指のブレで動き出さないように） */
   DEAD_ZONE_RATIO: 0.15,
   BASE_COLOR: 0xffffff,
@@ -151,6 +145,24 @@ export const AUDIENCE_CONFIG = {
   COLOR_FRENZY: 0xffdd33,
 };
 
+/**
+ * 経験値オーブ（ヴァンサバ風の落とし物・吸い取り仕様）関連。
+ * アンチを倒すと落ち、プレイヤーが player.magnetRadius 以内に近づくと
+ * 引き寄せられ、PICKUP_DISTANCE まで近づくと自動的に回収される
+ */
+export const EXP_ORB_CONFIG = {
+  /** オブジェクトプールの上限 */
+  POOL_SIZE: 64,
+  /** オーブの表示半径（px） */
+  RADIUS: 5,
+  /** オーブの色 */
+  COLOR: 0x66ffcc,
+  /** この距離まで近づいたら自動的に回収される（px） */
+  PICKUP_DISTANCE: 20,
+  /** 吸引開始後、オーブがプレイヤーへ向かう速度（px/秒） */
+  MAGNET_SPEED: 260,
+};
+
 /** 熱狂状態（Heat 最大時）の連鎖関連 */
 export const FRENZY_CONFIG = {
   /** 周囲の観客へ熱を伝える半径（px） */
@@ -171,6 +183,8 @@ export const FRENZY_CONFIG = {
 export const SONG_CONFIG = {
   /** 自動発動の間隔（ミリ秒） */
   INTERVAL_MS: 2000,
+  /** 強化（テンポアップ）で短縮できる発動間隔の下限（ミリ秒） */
+  MIN_INTERVAL_MS: 800,
   /** 効果半径（px） */
   RADIUS: 120,
   /** 観客へ与える Heat 量 */
@@ -187,6 +201,8 @@ export const SONG_CONFIG = {
 export const DANCE_CONFIG = {
   /** 自動発動の間隔（ミリ秒） */
   INTERVAL_MS: 3000,
+  /** 強化（テンポアップ）で短縮できる発動間隔の下限（ミリ秒） */
+  MIN_INTERVAL_MS: 1200,
   /** 扇形の半径（px） */
   RADIUS: 150,
   /** 扇形の中心角（度） */
@@ -207,6 +223,8 @@ export const FANSERVICE_CONFIG = {
 export const MC_CONFIG = {
   /** 自動発動の間隔（ミリ秒） */
   INTERVAL_MS: 20000,
+  /** 強化（テンポアップ）で短縮できる発動間隔の下限（ミリ秒） */
+  MIN_INTERVAL_MS: 10000,
   /** 効果時間（ミリ秒） */
   DURATION_MS: 10000,
   /** 効果中の Heat 上昇量の倍率 */
@@ -272,6 +290,7 @@ export const ANTI_CONFIG = {
  * behavior: 'contact'（プレイヤーに接触したときだけ効果を発揮）/
  *   'pulse'（接触しなくても一定間隔で周囲の Heat を削る遠隔攻撃。ジャマー専用）
  * normalWeight/waveWeight: 通常出現・ウェーブ出現での抽選重み（0 なら出現しない）。
+ * expValue: 撃破時に落とす経験値オーブの経験値量（EXP_ORB_CONFIG を参照）。
  * ボスは抽選には使わず、GameScene.spawnBoss が個別に生成する
  * （HP は stage.bossHpMult で会場ごとに調整される）。
  */
@@ -287,6 +306,7 @@ export const ANTI_TYPES = [
     behavior: 'contact',
     normalWeight: 6,
     waveWeight: 4,
+    expValue: 8,
   },
   {
     id: 'runner',
@@ -300,6 +320,7 @@ export const ANTI_TYPES = [
     behavior: 'contact',
     normalWeight: 2,
     waveWeight: 3,
+    expValue: 6,
   },
   {
     id: 'brute',
@@ -313,6 +334,7 @@ export const ANTI_TYPES = [
     behavior: 'contact',
     normalWeight: 1,
     waveWeight: 2,
+    expValue: 15,
   },
   {
     id: 'jammer',
@@ -329,6 +351,7 @@ export const ANTI_TYPES = [
     pulseHeatDrain: -4,
     normalWeight: 0,
     waveWeight: 2,
+    expValue: 10,
   },
   {
     id: 'boss',
@@ -344,6 +367,7 @@ export const ANTI_TYPES = [
     contactCooldownMs: 1200,
     normalWeight: 0,
     waveWeight: 0,
+    expValue: 50,
   },
 ];
 
@@ -365,6 +389,10 @@ export const UPGRADE_CONFIG = {
   RANGE_MULTIPLIER: 1.15,
   /** 移動速度 UP 1 回あたりの倍率 */
   SPEED_MULTIPLIER: 1.12,
+  /** 経験値吸収範囲 UP 1 回あたりの半径倍率 */
+  MAGNET_MULTIPLIER: 1.25,
+  /** テンポアップ 1 回あたりの発動間隔倍率（小さいほど間隔が短くなる） */
+  TEMPO_MULTIPLIER: 0.88,
 };
 
 /** レベル関連 */
@@ -434,6 +462,8 @@ export const AUDIO_CONFIG = {
   CHEER_GAINS: [0, 0.04, 0.08, 0.13, 0.2],
   /** 熱狂 SE の最短再生間隔（ミリ秒、連鎖時の鳴りすぎ防止） */
   FRENZY_SE_MIN_INTERVAL_MS: 70,
+  /** 経験値オーブ回収 SE の最短再生間隔（ミリ秒、大量回収時の鳴りすぎ防止） */
+  EXP_PICKUP_SE_MIN_INTERVAL_MS: 60,
 };
 
 /**

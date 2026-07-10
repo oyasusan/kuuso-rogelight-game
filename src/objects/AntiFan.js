@@ -30,6 +30,8 @@ export default class AntiFan extends Phaser.Physics.Arcade.Image {
     this.heatDrainMult = type.heatDrainMult;
     this.maxHp = Math.max(1, Math.round(ANTI_CONFIG.MAX_HP * type.hpMult));
     this.hp = this.maxHp;
+    // 撃破時に落とす経験値オーブの経験値量
+    this.expValue = type.expValue ?? 0;
     // 接触しても退場しない種類（ボス）の多重ヒット防止用クールタイム
     this.contactCooldownMs = type.contactCooldownMs ?? 0;
     this.contactCooldownUntil = 0;

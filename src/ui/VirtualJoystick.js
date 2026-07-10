@@ -2,9 +2,10 @@ import Phaser from 'phaser';
 import { DEPTH, JOYSTICK_CONFIG } from '../constants.js';
 
 /**
- * スマホ等タッチデバイス向けの仮想パッド。
- * 画面左下に固定表示され（ワールドがスクロールしても動かない）、ベース円の
- * 近くをタッチしてドラッグすると、中心からの傾き（0〜1）と方向を getVector() で返す。
+ * スマホ等タッチデバイス向けの仮想パッド（フローティング仕様）。
+ * 画面上をタッチした位置にその場でベース円が出現し、ドラッグすると中心からの
+ * 傾き（0〜1）と方向を getVector() で返す。指を離すと消え、次にタッチした
+ * 位置へ再び現れる（固定位置ではないため、画面のどこからでも操作を始められる）。
  * Player.js はキーボード入力に加えてこれを読み、値があれば優先して移動に使う。
  */
 export default class VirtualJoystick {
@@ -16,31 +17,34 @@ export default class VirtualJoystick {
     /** 現在の入力ベクトル（x, y とも -1〜1、長さは傾きの割合） */
     this.vector = new Phaser.Math.Vector2(0, 0);
 
-    this.baseX = JOYSTICK_CONFIG.X;
-    this.baseY = scene.scale.height - JOYSTICK_CONFIG.Y_FROM_BOTTOM;
+    /** 出現中のベース中心座標（未出現時は無効） */
+    this.baseX = 0;
+    this.baseY = 0;
 
     this.base = scene.add
       .circle(
-        this.baseX,
-        this.baseY,
+        0,
+        0,
         JOYSTICK_CONFIG.BASE_RADIUS,
         JOYSTICK_CONFIG.BASE_COLOR,
         JOYSTICK_CONFIG.BASE_ALPHA,
       )
       .setStrokeStyle(2, JOYSTICK_CONFIG.BASE_COLOR, JOYSTICK_CONFIG.BASE_BORDER_ALPHA)
       .setDepth(DEPTH.UI)
-      .setScrollFactor(0);
+      .setScrollFactor(0)
+      .setVisible(false);
 
     this.knob = scene.add
       .circle(
-        this.baseX,
-        this.baseY,
+        0,
+        0,
         JOYSTICK_CONFIG.KNOB_RADIUS,
         JOYSTICK_CONFIG.KNOB_COLOR,
         JOYSTICK_CONFIG.KNOB_ALPHA,
       )
       .setDepth(DEPTH.UI)
-      .setScrollFactor(0);
+      .setScrollFactor(0)
+      .setVisible(false);
 
     this.onPointerDown = this.onPointerDown.bind(this);
     this.onPointerMove = this.onPointerMove.bind(this);
@@ -55,16 +59,25 @@ export default class VirtualJoystick {
     scene.events.once('shutdown', () => this.destroy());
   }
 
-  /** ベース付近をタッチしたら操作を開始する（既に別の指で操作中なら無視） */
+  /**
+   * タッチした位置にベースを出現させて操作を開始する（既に別の指で操作中なら無視）。
+   * アップグレード選択中や、ボタンなど他の UI 要素の上をタッチした場合は
+   * 誤操作防止のため出現させない
+   */
   onPointerDown(pointer) {
-    if (this.pointerId !== null) {
+    if (this.pointerId !== null || this.scene.isPaused) {
       return;
     }
-    const dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, this.baseX, this.baseY);
-    if (dist <= JOYSTICK_CONFIG.BASE_RADIUS * JOYSTICK_CONFIG.GRAB_RADIUS_MULTIPLIER) {
-      this.pointerId = pointer.id;
-      this.updateFromPointer(pointer);
+    if (this.scene.input.hitTestPointer(pointer).length > 0) {
+      return;
     }
+
+    this.pointerId = pointer.id;
+    this.baseX = pointer.x;
+    this.baseY = pointer.y;
+    this.base.setPosition(this.baseX, this.baseY).setVisible(true);
+    this.knob.setPosition(this.baseX, this.baseY).setVisible(true);
+    this.updateFromPointer(pointer);
   }
 
   /** 操作中のポインタが動いたらノブとベクトルを更新する */
@@ -74,12 +87,13 @@ export default class VirtualJoystick {
     }
   }
 
-  /** 操作中のポインタが離れたら中央へ戻す */
+  /** 操作中のポインタが離れたらベースごと消す */
   onPointerUp(pointer) {
     if (pointer.id === this.pointerId) {
       this.pointerId = null;
       this.vector.set(0, 0);
-      this.knob.setPosition(this.baseX, this.baseY);
+      this.base.setVisible(false);
+      this.knob.setVisible(false);
     }
   }
 

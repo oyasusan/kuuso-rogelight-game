@@ -40,6 +40,8 @@ export class Performance {
       this.timer.remove();
     }
     this.isActive = true;
+    /** 現在の発動間隔（レベルアップ強化「テンポアップ」で短縮するため保持する） */
+    this.intervalMs = intervalMs;
     this.timer = this.scene.time.addEvent({
       delay: intervalMs,
       loop: true,
@@ -90,7 +92,7 @@ export class SongPerformance extends Performance {
     this.playEffect(x, y);
   }
 
-  /** 半径内のアンチへダメージを与える */
+  /** 半径内のアンチへダメージを与える。撃破した場合は経験値オーブを落とす */
   damageAntis(x, y) {
     const radiusSq = this.radius * this.radius;
     let hitAny = false;
@@ -98,9 +100,15 @@ export class SongPerformance extends Performance {
       const distSq = Phaser.Math.Distance.BetweenPointsSquared({ x, y }, anti);
       if (distSq <= radiusSq) {
         const wasBoss = anti.type === 'boss';
+        const expValue = anti.expValue;
+        const antiX = anti.x;
+        const antiY = anti.y;
         const defeated = anti.takeDamage(this.damage);
-        if (defeated && wasBoss) {
-          this.scene.onBossDefeated?.(anti.x, anti.y);
+        if (defeated) {
+          this.scene.expOrbSystem?.spawn(antiX, antiY, expValue);
+          if (wasBoss) {
+            this.scene.onBossDefeated?.(antiX, antiY);
+          }
         }
         hitAny = true;
       }

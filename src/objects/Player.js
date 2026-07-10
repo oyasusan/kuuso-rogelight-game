@@ -40,6 +40,8 @@ export default class Player extends Phaser.Physics.Arcade.Image {
 
     /** 移動速度（レベルアップ強化で変更できるようプロパティ化） */
     this.moveSpeed = PLAYER_CONFIG.SPEED;
+    /** 経験値オーブの吸収範囲（px）。レベルアップ強化で拡大する */
+    this.magnetRadius = PLAYER_CONFIG.MAGNET_RADIUS;
     /** 最後に移動した方向（ラジアン）。ダンスの扇形の向きに使う */
     this.facingAngle = -Math.PI / 2;
     /**

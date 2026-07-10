@@ -16,6 +16,7 @@ import {
 import HeatSystem from '../systems/HeatSystem.js';
 import SpawnSystem from '../systems/SpawnSystem.js';
 import LevelSystem from '../systems/LevelSystem.js';
+import ExpOrbSystem from '../systems/ExpOrbSystem.js';
 import UpgradeSystem from '../systems/UpgradeSystem.js';
 import StageDirector from '../systems/StageDirector.js';
 import audioSystem from '../systems/AudioSystem.js';
@@ -30,6 +31,7 @@ import {
   AUDIENCE_SPRITE_CONFIG,
   COMBO_CONFIG,
   DEPTH,
+  EXP_ORB_CONFIG,
   FRENZY_CONFIG,
   GAME,
   SCORE_CONFIG,
@@ -93,6 +95,7 @@ export default class GameScene extends Phaser.Scene {
       this.mods.audienceHeatDecayPerSec,
     );
     this.levelSystem = new LevelSystem();
+    this.expOrbSystem = new ExpOrbSystem(this, this.player, this.levelSystem);
 
     // パフォーマンス。歌のみ最初から有効、他はレベルアップで取得
     this.song = new SongPerformance(
@@ -187,6 +190,7 @@ export default class GameScene extends Phaser.Scene {
   /** 観客・アンチ・プレイヤー用のテクスチャを動的生成する（画像アセット不使用） */
   createTextures() {
     this.createCircleTexture('spark', 3);
+    this.createCircleTexture('exp-orb', EXP_ORB_CONFIG.RADIUS);
     createIdolTexture(
       this,
       `idol-${this.mods.character.id}`,
@@ -226,6 +230,7 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
     this.player.update();
+    this.expOrbSystem.update();
     for (const anti of this.antiGroup.getMatching('active', true)) {
       anti.chase(this.player);
       // ジャマー種の遠隔パルス攻撃（接触しなくても定期的に周囲の Heat を削る）
@@ -371,9 +376,8 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  /** ボス撃破時の演出とボーナス経験値 */
+  /** ボス撃破時の演出。経験値は撃破時に落ちるオーブを拾うことで獲得する */
   onBossDefeated(x, y) {
-    this.levelSystem.gainExp(FRENZY_CONFIG.EXP_PER_FRENZY * 5);
     this.frenzySpark.explode(20, x, y);
     audioSystem.playFrenzy();
     this.showFloatingText(x, y - 20, 'ボス撃破！', '#ffdd66');

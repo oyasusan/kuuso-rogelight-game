@@ -129,7 +129,9 @@ export default class UpgradePanel {
         color: UI_CONFIG.TEXT_COLOR,
         fontStyle: 'bold',
         align: 'center',
-        wordWrap: { width: cardWidth - 30 },
+        // 日本語には単語区切りの空白がないため、通常の wordWrap では折り返せず
+        // カード幅をはみ出してしまう。useAdvancedWrap で文字単位の折り返しを有効にする
+        wordWrap: { width: cardWidth - 30, useAdvancedWrap: true },
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.OVERLAY)
@@ -142,7 +144,7 @@ export default class UpgradePanel {
         color: '#bbbbdd',
         align: 'center',
         lineSpacing: 5,
-        wordWrap: { width: cardWidth - 30 },
+        wordWrap: { width: cardWidth - 30, useAdvancedWrap: true },
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.OVERLAY)

@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
-import { FANSERVICE_CONFIG, UPGRADE_CONFIG } from '../constants.js';
+import {
+  DANCE_CONFIG,
+  FANSERVICE_CONFIG,
+  MC_CONFIG,
+  SONG_CONFIG,
+  UPGRADE_CONFIG,
+} from '../constants.js';
 
 /**
  * レベルアップ時のアップグレード（3 択）を管理するシステム。
@@ -25,6 +31,8 @@ export default class UpgradeSystem {
       mc: 0,
       range: 0,
       speed: 0,
+      magnet: 0,
+      tempo: 0,
     };
   }
 
@@ -119,6 +127,43 @@ export default class UpgradeSystem {
           this.ranks.speed += 1;
         },
       },
+      {
+        id: 'magnet',
+        label: '経験値吸収範囲UP',
+        description: 'アンチが落とす経験値オーブの吸収範囲を 25% 拡大',
+        isAvailable: () => true,
+        apply: () => {
+          player.magnetRadius *= UPGRADE_CONFIG.MAGNET_MULTIPLIER;
+          this.ranks.magnet += 1;
+        },
+      },
+      {
+        id: 'tempo',
+        label: 'テンポアップ',
+        description: `全パフォーマンスの発動間隔を ${Math.round((1 - UPGRADE_CONFIG.TEMPO_MULTIPLIER) * 100)}% 短縮`,
+        // 歌は常に有効なため、歌の間隔が下限に達したらこれ以上強化できない
+        isAvailable: () => song.intervalMs > SONG_CONFIG.MIN_INTERVAL_MS,
+        apply: () => {
+          const mult = UPGRADE_CONFIG.TEMPO_MULTIPLIER;
+          song.start(Math.max(SONG_CONFIG.MIN_INTERVAL_MS, Math.round(song.intervalMs * mult)));
+          if (dance.isActive) {
+            dance.start(
+              Math.max(DANCE_CONFIG.MIN_INTERVAL_MS, Math.round(dance.intervalMs * mult)),
+            );
+          }
+          if (mc.isActive) {
+            mc.start(Math.max(MC_CONFIG.MIN_INTERVAL_MS, Math.round(mc.intervalMs * mult)));
+          }
+          if (fanService.isActive) {
+            fanService.cooldownMs = Math.max(
+              FANSERVICE_CONFIG.MIN_COOLDOWN_MS,
+              Math.round(fanService.cooldownMs * mult),
+            );
+            fanService.start(fanService.cooldownMs);
+          }
+          this.ranks.tempo += 1;
+        },
+      },
     ];
   }
 
@@ -141,6 +186,8 @@ export default class UpgradeSystem {
       mc: 'MC',
       range: '範囲',
       speed: '速度',
+      magnet: '吸収範囲',
+      tempo: 'テンポ',
     };
     const parts = Object.entries(this.ranks)
       .filter(([, rank]) => rank > 0)

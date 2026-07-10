@@ -24,6 +24,7 @@ class AudioSystem {
     this.bgmNextTime = 0;
 
     this.lastFrenzySeAt = 0;
+    this.lastExpPickupSeAt = 0;
   }
 
   /** 最初のユーザー操作で呼ぶ。AudioContext を生成・再開する */
@@ -255,6 +256,17 @@ class AudioSystem {
     }
     this.lastFrenzySeAt = nowMs;
     this.tone(this.now, { freq: 700, slideTo: 1000, type: 'triangle', duration: 0.09, gain: 0.09 });
+  }
+
+  /** 経験値オーブを回収した（連続回収時の鳴りすぎを防ぐレート制限つき） */
+  playExpPickup() {
+    if (!this.context) return;
+    const nowMs = performance.now();
+    if (nowMs - this.lastExpPickupSeAt < AUDIO_CONFIG.EXP_PICKUP_SE_MIN_INTERVAL_MS) {
+      return;
+    }
+    this.lastExpPickupSeAt = nowMs;
+    this.tone(this.now, { freq: 1200, slideTo: 1600, type: 'sine', duration: 0.06, gain: 0.05 });
   }
 
   /** レベルアップ（3 択が開く） */
