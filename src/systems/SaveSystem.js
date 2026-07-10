@@ -1,10 +1,13 @@
 /**
  * セーブデータの管理システム。
  * ファン（永久強化の通貨）・永久強化ランク・選択中のキャラクター / ステージを
- * localStorage に永続化する。
+ * localStorage に永続化する。ブラウザをリロードしたり、GitHub Pages への
+ * 再デプロイでゲームのコードが更新されたりしても、同一オリジン（例:
+ * https://<user>.github.io/<repo>/）でアクセスし続ける限りこのデータは残る。
  *
- * localStorage が使えない環境（プライベートモード等）でも
- * メモリ上のデータで動作し続ける（永続化だけされない）。
+ * localStorage が使えない環境（プライベートブラウジング、Cookie/ストレージを
+ * 全ブロックする設定など）では isAvailable が false になり、メモリ上の
+ * データだけで動作し続ける（永続化だけされない。HomeScene で警告表示する）。
  *
  * モジュール末尾で生成するシングルトンを import して使う。
  */
@@ -23,10 +26,33 @@ const DEFAULT_SAVE = {
   stageId: 'small',
 };
 
+/**
+ * 初期値のコピーを作る。
+ * オブジェクトのスプレッドは浅いコピーのため、permaRanks を明示的に複製しないと
+ * 複数インスタンス間で DEFAULT_SAVE.permaRanks を直接共有・変更してしまう
+ */
+function cloneDefaultSave() {
+  return { ...DEFAULT_SAVE, permaRanks: { ...DEFAULT_SAVE.permaRanks } };
+}
+
 class SaveSystem {
   constructor() {
+    /** localStorage が実際に読み書きできるか（プライベートモード等では false になる） */
+    this.isAvailable = this.checkAvailable();
     /** @type {typeof DEFAULT_SAVE} */
     this.data = this.load();
+  }
+
+  /** localStorage へ実際に書き込めるか確認する（例外を投げるだけで値は残さない） */
+  checkAvailable() {
+    const probeKey = `${STORAGE_KEY}-probe`;
+    try {
+      window.localStorage.setItem(probeKey, '1');
+      window.localStorage.removeItem(probeKey);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /** localStorage から読み込む。壊れていたら初期値に戻す */
@@ -34,13 +60,13 @@ class SaveSystem {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) {
-        return { ...DEFAULT_SAVE };
+        return cloneDefaultSave();
       }
       const parsed = JSON.parse(raw);
       // 将来キーが増えても初期値で補完されるようマージする
-      return { ...DEFAULT_SAVE, ...parsed };
+      return { ...cloneDefaultSave(), ...parsed, permaRanks: { ...parsed.permaRanks } };
     } catch {
-      return { ...DEFAULT_SAVE };
+      return cloneDefaultSave();
     }
   }
 
@@ -48,8 +74,12 @@ class SaveSystem {
   persist() {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
-    } catch {
+    } catch (err) {
       // 永続化できない環境ではメモリ上のデータだけで続行する
+      console.warn(
+        'セーブデータの保存に失敗しました（プライベートブラウジングやストレージ制限の可能性があります）',
+        err,
+      );
     }
   }
 

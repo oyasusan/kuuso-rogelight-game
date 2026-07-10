@@ -75,6 +75,25 @@ export default class HomeScene extends Phaser.Scene {
       .setOrigin(0.5);
     cursorY += 22;
 
+    if (!saveSystem.isAvailable) {
+      // プライベートブラウジング等で localStorage が使えない場合、
+      // ファンや永久強化がリロードで消えることに気づけるよう明示する
+      this.add
+        .text(
+          centerX,
+          cursorY,
+          '⚠ この環境ではファン・永久強化を保存できません（プライベートブラウジング等）',
+          {
+            fontFamily: UI_CONFIG.FONT_FAMILY,
+            fontSize: '11px',
+            color: '#ff8888',
+            align: 'center',
+          },
+        )
+        .setOrigin(0.5);
+      cursorY += 18;
+    }
+
     if (hasTopRightSpace) {
       // 横長: 右上に固定表示
       this.add
