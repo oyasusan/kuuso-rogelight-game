@@ -502,9 +502,9 @@ export const CHARACTERS = [
   {
     id: 'yui',
     name: 'ゆい',
-    description: 'スピード型\n移動速度 +25%\n歌の範囲 -15%',
+    description: 'ヒットアンドアウェイ型\n歌のHeat +15%\n移動速度 +25%\n歌の範囲 -15%',
     color: 0xffdd44,
-    songHeatMult: 1,
+    songHeatMult: 1.15,
     songRadiusMult: 0.85,
     speedMult: 1.25,
     unlocked: true,
