@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { DEPTH, GAME, UI_CONFIG } from '../constants.js';
 import audioSystem from '../systems/AudioSystem.js';
 import saveSystem from '../systems/SaveSystem.js';
+import { createBackButton } from '../ui/BackButton.js';
 
 /** ボタンの見た目 */
 const BUTTON = {
@@ -69,16 +70,11 @@ export default class SettingsScene extends Phaser.Scene {
       this.confirmReset(),
     );
 
-    const backText = this.add
-      .text(centerX, height - 32, 'タップ / スペースキーでタイトルへ', {
-        fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '18px',
-        color: '#aaaacc',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setInteractive({ useHandCursor: true });
-    backText.on('pointerdown', () => this.backToTitle());
+    createBackButton(this, {
+      x: centerX,
+      y: height - 40,
+      onClick: () => this.backToTitle(),
+    });
     this.spaceKeyHandler = () => this.backToTitle();
     this.input.keyboard.on('keydown-SPACE', this.spaceKeyHandler);
   }

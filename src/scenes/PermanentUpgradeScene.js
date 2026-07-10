@@ -3,6 +3,7 @@ import { DEPTH, GAME, PERMA_CONFIG, UI_CONFIG } from '../constants.js';
 import audioSystem from '../systems/AudioSystem.js';
 import saveSystem from '../systems/SaveSystem.js';
 import { enableVerticalScroll } from '../ui/scrollHelper.js';
+import { createBackButton } from '../ui/BackButton.js';
 
 /** 行の見た目（狭い画面では ROW_NARROW を使い、ランク表示とボタンを 2 段目に落とす） */
 const ROW = {
@@ -91,17 +92,11 @@ export default class PermanentUpgradeScene extends Phaser.Scene {
       .rectangle(centerX, footerY, width, footerHeight, 0x06060e, 0.85)
       .setScrollFactor(0)
       .setDepth(DEPTH.UI);
-    const backText = this.add
-      .text(centerX, footerY, 'タップ / スペースキーでタイトルへ', {
-        fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '16px',
-        color: '#aaaacc',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.UI)
-      .setInteractive({ useHandCursor: true });
-    backText.on('pointerdown', () => this.backToTitle());
+    createBackButton(this, {
+      x: centerX,
+      y: footerY,
+      onClick: () => this.backToTitle(),
+    });
     this.input.keyboard.once('keydown-SPACE', () => this.backToTitle());
 
     // 画面に収まらない場合はドラッグ／ホイールでスクロールできるようにする

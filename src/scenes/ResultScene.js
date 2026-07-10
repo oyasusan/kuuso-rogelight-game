@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME, PERMA_CONFIG, UI_CONFIG } from '../constants.js';
 import audioSystem from '../systems/AudioSystem.js';
 import saveSystem from '../systems/SaveSystem.js';
+import { createBackButton } from '../ui/BackButton.js';
 
 /**
  * リザルト画面。
@@ -81,20 +82,50 @@ export default class ResultScene extends Phaser.Scene {
       )
       .setOrigin(0.5);
 
-    this.add
-      .text(centerX, 460, 'タップ / スペースキーで永久強化へ', {
-        fontFamily: UI_CONFIG.FONT_FAMILY,
-        fontSize: '20px',
-        color: '#aaaacc',
-      })
-      .setOrigin(0.5);
+    // ライブ終了直後は誤タップしやすいため、画面全体でのタップでは遷移させず、
+    // 明示的なボタンを押したときだけ次へ進めるようにする
+    this.createButton(centerX, 462, 240, 46, '永久強化へ進む', 0xffdd66, () =>
+      this.goToUpgrade(),
+    );
+    createBackButton(this, {
+      x: centerX,
+      y: 516,
+      label: 'タイトルへ戻る',
+      onClick: () => this.backToTitle(),
+    });
 
     this.input.keyboard.once('keydown-SPACE', () => this.goToUpgrade());
-    this.input.once('pointerdown', () => this.goToUpgrade());
+  }
+
+  /** シンプルな矩形ボタンを作る */
+  createButton(x, y, width, height, label, borderColor, onClick) {
+    const rect = this.add
+      .rectangle(x, y, width, height, 0x1a1a33)
+      .setStrokeStyle(2, borderColor)
+      .setInteractive({ useHandCursor: true });
+    this.add
+      .text(x, y, label, {
+        fontFamily: UI_CONFIG.FONT_FAMILY,
+        fontSize: '18px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+    rect.on('pointerdown', () => {
+      audioSystem.unlock();
+      audioSystem.playSelect();
+      onClick();
+    });
+    return rect;
   }
 
   /** RFP のフロー（リザルト → 永久強化 → タイトル）に従って遷移する */
   goToUpgrade() {
     this.scene.start('PermanentUpgradeScene');
+  }
+
+  /** 永久強化を後回しにして直接タイトルへ戻る */
+  backToTitle() {
+    audioSystem.playSelect();
+    this.scene.start('HomeScene');
   }
 }
