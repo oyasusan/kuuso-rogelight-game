@@ -4,6 +4,7 @@ import GameScene from './scenes/GameScene.js';
 import ResultScene from './scenes/ResultScene.js';
 import PermanentUpgradeScene from './scenes/PermanentUpgradeScene.js';
 import SettingsScene from './scenes/SettingsScene.js';
+import HowToPlayScene from './scenes/HowToPlayScene.js';
 import { GAME } from './constants.js';
 
 /**
@@ -29,10 +30,23 @@ const config = {
   physics: {
     default: 'arcade',
   },
-  scene: [HomeScene, GameScene, ResultScene, PermanentUpgradeScene, SettingsScene],
+  scene: [
+    HomeScene,
+    GameScene,
+    ResultScene,
+    PermanentUpgradeScene,
+    SettingsScene,
+    HowToPlayScene,
+  ],
 };
 
 const game = new Phaser.Game(config);
+
+// ?debug=1 を付けた時のみ window に露出する（スクリーンショット撮影スクリプト等の
+// 自動操作用フック。通常プレイでは一切使わない）
+if (new URLSearchParams(window.location.search).get('debug') === '1') {
+  window.__phaserGame = game;
+}
 
 // 画面回転時はキャンバスサイズを更新し、表示中のシーンを作り直してレイアウトを
 // 組み直す（回転直後は innerWidth/innerHeight がまだ更新されていないことがある

@@ -106,11 +106,15 @@ export default class HomeScene extends Phaser.Scene {
       this.createButton(width - 84, 62, 130, 30, '永久強化', () =>
         this.goTo('PermanentUpgradeScene'),
       );
-      this.createButton(width - 84, 98, 130, 30, '設定', () =>
+      // 設定と遊び方は隣り合わせに並べる
+      this.createButton(width - 118, 98, 66, 30, '設定', () =>
         this.goTo('SettingsScene'),
       );
+      this.createButton(width - 50, 98, 66, 30, '遊び方', () =>
+        this.goTo('HowToPlayScene'),
+      );
     } else {
-      // 縦長: タイトル下にファン数とボタンを横並びで挿入する
+      // 縦長: タイトル下にファン数とボタンを縦に挿入する
       cursorY += 8;
       this.add
         .text(centerX, cursorY, `ファン ${saveSystem.data.fans} 人`, {
@@ -120,11 +124,16 @@ export default class HomeScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
       cursorY += 22;
-      this.createButton(centerX - 72, cursorY, 130, 28, '永久強化', () =>
+      this.createButton(centerX, cursorY, 150, 28, '永久強化', () =>
         this.goTo('PermanentUpgradeScene'),
       );
-      this.createButton(centerX + 72, cursorY, 130, 28, '設定', () =>
+      cursorY += 34;
+      // 設定と遊び方は隣り合わせに並べる
+      this.createButton(centerX - 58, cursorY, 104, 28, '設定', () =>
         this.goTo('SettingsScene'),
+      );
+      this.createButton(centerX + 58, cursorY, 104, 28, '遊び方', () =>
+        this.goTo('HowToPlayScene'),
       );
       cursorY += 22;
     }
